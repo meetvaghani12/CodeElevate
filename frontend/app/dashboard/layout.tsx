@@ -114,7 +114,7 @@ export default function DashboardLayout({
           </svg>
           <span>CodeReview</span>
         </div>
-        <div className="flex-1 md:grow-0"></div>
+        <div className="flex-1"></div>
         <div className="flex items-center gap-4">
           <ThemeToggle />
           <UserNav />
