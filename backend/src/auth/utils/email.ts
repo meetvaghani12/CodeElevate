@@ -30,7 +30,7 @@ export const sendVerificationEmail = async (
         <p>Hello ${firstName},</p>
         <p>We received a request to reset your password. Click the button below to create a new password:</p>
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.FRONTEND_URL}/reset-password?token=${otp}" style="background-color: #4CAF50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Reset Password</a>
+          <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${otp}" style="background-color: #4CAF50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Reset Password</a>
         </div>
         <p>If you didn't request a password reset, please ignore this email or contact support if you have concerns.</p>
         <p>This link will expire in 1 hour.</p>
