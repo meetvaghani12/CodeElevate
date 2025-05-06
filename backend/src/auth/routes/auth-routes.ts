@@ -1,29 +1,39 @@
-import { Router } from 'express';
-import { 
-  register, 
-  login, 
-  verifyEmail, 
-  verifyLoginOTP, 
-  resendOTP, 
-  forgotPassword, 
-  resetPassword, 
-  logout, 
-  getUserProfile 
-} from '../controller/auth-controller';
+import express from 'express';
+import {
+  register,
+  verifyEmail,
+  login,
+  verifyLoginOTP,
+  resendOTP,
+  forgotPassword,
+  resetPassword,
+  logout,
+  getProfile,
+} from './../controller/auth-controller';
+import {
+  validateRequest,
+  registrationValidationRules,
+  loginValidationRules,
+  otpValidationRules,
+  passwordResetValidationRules,
+} from './../middleware/validate.middleware';
+import { authenticate } from './../middleware/auth.middleware';
 import googleAuthRoutes from './google-auth-routes';
 
-const router = Router();
+const router = express.Router();
 
-// Regular auth routes
-router.post('/register', register);
-router.post('/login', login);
-router.post('/verify-email', verifyEmail);
-router.post('/verify-login-otp', verifyLoginOTP);
+// Public routes
+router.post('/register', validateRequest(registrationValidationRules), register);
+router.post('/verify-email', validateRequest(otpValidationRules), verifyEmail);
+router.post('/login', validateRequest(loginValidationRules), login);
+router.post('/verify-login-otp', validateRequest(otpValidationRules), verifyLoginOTP);
 router.post('/resend-otp', resendOTP);
 router.post('/forgot-password', forgotPassword);
-router.post('/reset-password', resetPassword);
-router.post('/logout', logout);
-router.get('/profile', getUserProfile);
+router.post('/reset-password', validateRequest(passwordResetValidationRules), resetPassword);
+
+// Protected routes
+router.post('/logout', authenticate, logout);
+router.get('/profile', authenticate, getProfile);
 
 // Google OAuth routes
 router.use('/google', googleAuthRoutes);

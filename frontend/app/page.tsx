@@ -1,8 +1,24 @@
+"use client"
+
+import { useEffect } from "react"
 import Link from "next/link"
 import { ArrowRight, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/lib/auth-context"
 
 export default function Home() {
+  const { user, logout } = useAuth()
+
+  // Add effect to log auth state
+  useEffect(() => {
+    console.log('Home Page: Current auth state:', { user })
+  }, [user])
+
+  const handleLogout = async () => {
+    console.log('Home Page: Logout clicked')
+    await logout()
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -36,14 +52,29 @@ export default function Home() {
             </Link>
           </nav>
           <div className="flex items-center gap-4">
-            <Link href="/signin">
-              <Button variant="ghost" size="sm">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button size="sm">Sign Up</Button>
-            </Link>
+            {user ? (
+              <>
+                <Link href="/dashboard">
+                  <Button variant="ghost" size="sm">
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/signin">
+                  <Button variant="ghost" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button size="sm">Sign Up</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -60,17 +91,28 @@ export default function Home() {
                 </p>
               </div>
               <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                <Link href="/signup">
-                  <Button size="lg" className="gap-1.5">
-                    Get Started
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link href="#pricing">
-                  <Button size="lg" variant="outline">
-                    View Pricing
-                  </Button>
-                </Link>
+                {user ? (
+                  <Link href="/dashboard">
+                    <Button size="lg" className="gap-1.5">
+                      Go to Dashboard
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/signup">
+                      <Button size="lg" className="gap-1.5">
+                        Get Started
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Link href="#pricing">
+                      <Button size="lg" variant="outline">
+                        View Pricing
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>

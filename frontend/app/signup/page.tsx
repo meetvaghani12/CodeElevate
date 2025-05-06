@@ -87,7 +87,7 @@ export default function RegisterPage() {
           title: "Email Verified",
           description: "Your account has been created. Please log in.",
         })
-        router.push('/dashboard')
+        router.push('/')
       } else {
         // Verification failed
         toast({

@@ -10,7 +10,6 @@ import {
   findUserByEmail, 
   createUser, 
   updateUser, 
-  getUserWithPreferences 
 } from './../db/user';
 
 const prisma = new PrismaClient();
@@ -285,32 +284,44 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const getUserProfile = async (req: Request, res: Response): Promise<void> => {
+export const getProfile = async (req: Request, res: Response): Promise<void> => {
   try {
-    // @ts-ignore - req.user is added by auth middleware
-    const userId = req.user.id;
-    
-    const userWithPreferences = await getUserWithPreferences(userId);
-    
-    if (!userWithPreferences) {
+    console.log('GetProfile: Request received', {
+      headers: req.headers,
+      user: req.user
+    });
+
+    if (!req.user) {
+      console.log('GetProfile: No user in request');
+      res.status(401).json({ message: 'Authentication required' });
+      return;
+    }
+
+    // Get user using email from the authenticated request
+    const user = await findUserByEmail(req.user.email);
+    console.log('GetProfile: User found', user ? 'Yes' : 'No');
+
+    if (!user) {
+      console.log('GetProfile: User not found');
       res.status(404).json({ message: 'User not found' });
       return;
     }
-    
-    
-    // Return user profile without sensitive information
-    res.status(200).json({
+
+    // Return user info without sensitive data
+    const response = {
       user: {
-        id: userWithPreferences.id,
-        firstName: userWithPreferences.firstName,
-        lastName: userWithPreferences.lastName,
-        email: userWithPreferences.email,
-        phone: userWithPreferences.phone,
-        createdAt: userWithPreferences.createdAt,
-      }
-    });
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        emailVerified: user.emailVerified,
+      },
+    };
+    console.log('GetProfile: Sending response', response);
+    res.status(200).json(response);
   } catch (error) {
-    console.error('Get user profile error:', error);
-    res.status(500).json({ message: 'Server error while fetching user profile' });
+    console.error('GetProfile: Error details:', error);
+    res.status(500).json({ message: 'Server error while fetching profile' });
   }
 };

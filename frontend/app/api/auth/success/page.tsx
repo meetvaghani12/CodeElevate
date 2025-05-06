@@ -59,7 +59,7 @@ export default function AuthSuccessPage() {
     })
     
     // Redirect to the protected area
-    setTimeout(() => router.push('/dashboard'), 1000)
+    setTimeout(() => router.push('/'), 1000)
   }, [searchParams, router])
 
   return (

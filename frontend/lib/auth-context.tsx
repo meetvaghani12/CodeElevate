@@ -1,118 +1,101 @@
 // src/lib/auth-context.tsx
 "use client"
 
-import { 
-  createContext, 
-  useContext, 
-  useState, 
-  useEffect, 
-  ReactNode 
-} from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { authApi } from "./auth"
+import { authApi } from './auth'
 
-type User = {
+interface User {
   id: string
+  email: string
   firstName: string
   lastName: string
-  email: string
-  phone?: string
 }
 
-type AuthContextType = {
+interface AuthContextType {
   user: User | null
   isLoading: boolean
-  isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<any>
-  verifyOTP: (email: string, otp: string) => Promise<any>
-  register: (userData: any) => Promise<any>
-  logout: () => Promise<void>
+  login: (token: string) => void
+  logout: () => void
+  checkAuth: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
-  useEffect(() => {
-    // Check if user is logged in on component mount
-    const checkAuth = async () => {
-      const token = localStorage.getItem('token')
-      
-      if (!token) {
-        setIsLoading(false)
-        return
-      }
-      
-      try {
-        // Fetch user profile with the token
-        const userData = await authApi.getUserProfile(token)
-        
-        if (userData.user) {
-          setUser(userData.user)
-        } else {
-          // If invalid token, clear it
-          localStorage.removeItem('token')
-        }
-      } catch (error) {
-        console.error('Auth check error:', error)
-        localStorage.removeItem('token')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    
+  const login = (token: string) => {
+    console.log('Auth Context: Login called with token', token ? 'Token exists' : 'No token')
+    localStorage.setItem('token', token)
     checkAuth()
-  }, [])
-
-  const login = async (email: string, password: string) => {
-    return await authApi.login({ email, password })
-  }
-
-  const verifyOTP = async (email: string, otp: string) => {
-    const response = await authApi.verifyLoginOTP({ email, otp })
-    
-    if (response.token) {
-      localStorage.setItem('token', response.token)
-      setUser(response.user)
-    }
-    
-    return response
-  }
-
-  const register = async (userData: any) => {
-    return await authApi.register(userData)
   }
 
   const logout = async () => {
+    console.log('Auth Context: Logout called')
     const token = localStorage.getItem('token')
     if (token) {
       try {
+        console.log('Auth Context: Calling logout API')
         await authApi.logout(token)
       } catch (error) {
-        console.error('Logout error:', error)
+        console.error('Auth Context: Logout API error:', error)
       }
     }
-    
+    console.log('Auth Context: Clearing local storage and user state')
     localStorage.removeItem('token')
     setUser(null)
-    router.push('/login')
+    router.push('/')
   }
 
+  const checkAuth = async () => {
+    console.log('Auth Context: checkAuth called')
+    const token = localStorage.getItem('token')
+    console.log('Auth Context: Token from localStorage:', token ? 'Token exists' : 'No token')
+
+    if (!token) {
+      console.log('Auth Context: No token found, setting user to null')
+      setUser(null)
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      console.log('Auth Context: Fetching user profile')
+      const response = await authApi.getUserProfile(token)
+      console.log('Auth Context: User profile response:', response)
+
+      if (response.user) {
+        console.log('Auth Context: Setting user state:', response.user)
+        setUser(response.user)
+      } else {
+        console.log('Auth Context: No user in response, clearing token and user state')
+        localStorage.removeItem('token')
+        setUser(null)
+      }
+    } catch (error) {
+      console.error('Auth Context: Error fetching user profile:', error)
+      localStorage.removeItem('token')
+      setUser(null)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    console.log('Auth Context: Initial checkAuth on mount')
+    checkAuth()
+  }, [])
+
+  // Add effect to log state changes
+  useEffect(() => {
+    console.log('Auth Context: User state changed:', user)
+  }, [user])
+
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        isLoading, 
-        isAuthenticated: !!user,
-        login,
-        verifyOTP,
-        register,
-        logout
-      }}
-    >
+    <AuthContext.Provider value={{ user, isLoading, login, logout, checkAuth }}>
       {children}
     </AuthContext.Provider>
   )

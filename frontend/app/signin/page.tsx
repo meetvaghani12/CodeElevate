@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -12,10 +12,12 @@ import { Loader2 } from "lucide-react"
 import { ArrowLeft } from "lucide-react"
 import { GoogleAuthButton } from "@/components/google-auth-button"
 import { authApi } from "@/lib/auth"
+import { useAuth } from "@/lib/auth-context"
 import { toast } from "@/components/ui/use-toast"
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login, user } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
@@ -26,6 +28,11 @@ export default function LoginPage() {
     otp: "",
   })
   const [showOtpVerification, setShowOtpVerification] = useState(false)
+
+  // Add effect to log auth state
+  useEffect(() => {
+    console.log('Signin Page: Current auth state:', { user })
+  }, [user])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -40,12 +47,15 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    console.log('Signin Page: Login form submitted')
 
     try {
+      console.log('Signin Page: Calling login API')
       const response = await authApi.login(formData)
+      console.log('Signin Page: Login API response:', response)
       
       if (response.requiresOTP) {
-        // Show OTP verification screen
+        console.log('Signin Page: OTP required')
         setOtpData({ email: formData.email, otp: "" })
         setShowOtpVerification(true)
         toast({
@@ -53,15 +63,16 @@ export default function LoginPage() {
           description: "Please check your email for the OTP code.",
         })
       } else if (response.token) {
-        // Direct login successful (shouldn't happen with 2FA enabled)
-        localStorage.setItem('token', response.token)
+        console.log('Signin Page: Login successful, calling auth context login')
+        login(response.token)
         toast({
           title: "Login Successful",
           description: "Welcome back!",
         })
+        console.log('Signin Page: Redirecting to dashboard')
         router.push('/dashboard')
       } else {
-        // Handle other responses
+        console.log('Signin Page: Login failed:', response.message)
         toast({
           title: "Login Error",
           description: response.message || "An error occurred during login",
@@ -69,7 +80,7 @@ export default function LoginPage() {
         })
       }
     } catch (error) {
-      console.error('Login error:', error)
+      console.error('Signin Page: Login error:', error)
       toast({
         title: "Login Failed",
         description: "An unexpected error occurred. Please try again.",
@@ -83,20 +94,24 @@ export default function LoginPage() {
   const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    console.log('Signin Page: OTP form submitted')
 
     try {
+      console.log('Signin Page: Calling verify OTP API')
       const response = await authApi.verifyLoginOTP(otpData)
+      console.log('Signin Page: Verify OTP API response:', response)
       
       if (response.token) {
-        // Login successful after OTP verification
-        localStorage.setItem('token', response.token)
+        console.log('Signin Page: OTP verification successful, calling auth context login')
+        login(response.token)
         toast({
           title: "Login Successful",
           description: "Welcome back!",
         })
+        console.log('Signin Page: Redirecting to dashboard')
         router.push('/dashboard')
       } else {
-        // OTP verification failed
+        console.log('Signin Page: OTP verification failed:', response.message)
         toast({
           title: "Verification Failed",
           description: response.message || "Invalid OTP code",
@@ -104,7 +119,7 @@ export default function LoginPage() {
         })
       }
     } catch (error) {
-      console.error('OTP verification error:', error)
+      console.error('Signin Page: OTP verification error:', error)
       toast({
         title: "Verification Failed",
         description: "An unexpected error occurred. Please try again.",
@@ -116,6 +131,7 @@ export default function LoginPage() {
   }
 
   const handleResendOtp = async () => {
+    console.log('Signin Page: Resending OTP')
     try {
       await authApi.resendOTP(otpData.email)
       toast({
@@ -123,7 +139,7 @@ export default function LoginPage() {
         description: "A new OTP has been sent to your email.",
       })
     } catch (error) {
-      console.error('Resend OTP error:', error)
+      console.error('Signin Page: Resend OTP error:', error)
       toast({
         title: "Failed to Resend OTP",
         description: "An error occurred. Please try again.",
@@ -134,7 +150,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 dark:bg-gray-900">
-     <Link href="/" className="absolute left-4 top-4 md:left-8 md:top-8">
+      <Link href="/" className="absolute left-4 top-4 md:left-8 md:top-8">
         <Button variant="ghost" className="gap-1">
           <ArrowLeft className="h-4 w-4" />
           Back
@@ -153,7 +169,6 @@ export default function LoginPage() {
         <CardContent className="space-y-4">
           {!showOtpVerification && (
             <>
-            
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -197,16 +212,14 @@ export default function LoginPage() {
                   </Link>
                 </div>
                 <div className="relative">
-               <div className="absolute inset-0 flex items-center">
-                 <span className="w-full border-t" />
-               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-               </div>
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                  </div>
                 </div>
                 <GoogleAuthButton />
-
-
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? (
@@ -248,25 +261,18 @@ export default function LoginPage() {
               </Button>
               <Button 
                 type="button" 
-                variant="outline" 
-                className="w-full" 
-                onClick={handleResendOtp}
-              >
-                Resend Code
-              </Button>
-              <Button 
-                type="button" 
                 variant="ghost" 
-                className="w-full" 
-                onClick={() => setShowOtpVerification(false)}
+                className="w-full"
+                onClick={handleResendOtp}
+                disabled={isLoading}
               >
-                Back to Login
+                Resend OTP
               </Button>
             </form>
           )}
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+        <CardFooter className="flex flex-col space-y-4">
+          <div className="text-center text-sm">
             Don't have an account?{" "}
             <Link href="/signup" className="text-primary underline underline-offset-4 hover:text-primary/90">
               Sign up
