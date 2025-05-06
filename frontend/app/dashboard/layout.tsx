@@ -87,17 +87,17 @@ export default function DashboardLayout({
                   },
                   {
                     title: "Review History",
-                    href: "/dashboard/history",
+                    href: "/history",
                     icon: History,
                   },
                   {
                     title: "Analytics",
-                    href: "/dashboard/analytics",
+                    href: "/analytics",
                     icon: BarChart3,
                   },
                   {
                     title: "Settings",
-                    href: "/dashboard/settings",
+                    href: "/settings",
                     icon: Settings,
                   },
                 ]}
@@ -147,17 +147,17 @@ export default function DashboardLayout({
                   },
                   {
                     title: "Review History",
-                    href: "/dashboard/history",
+                    href: "/history",
                     icon: History,
                   },
                   {
                     title: "Analytics",
-                    href: "/dashboard/analytics",
+                    href: "/analytics",
                     icon: BarChart3,
                   },
                   {
                     title: "Settings",
-                    href: "/dashboard/settings",
+                    href: "/settings",
                     icon: Settings,
                   },
                 ]}
@@ -255,7 +255,7 @@ function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/dashboard/settings" className="flex items-center">
+          <Link href="/settings" className="flex items-center">
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>
           </Link>

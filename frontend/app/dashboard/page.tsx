@@ -5,6 +5,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Code, FileCode, History, Settings, BarChart } from "lucide-react";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -91,17 +92,23 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-2">
-                <Button variant="outline" className="justify-start gap-2">
-                  <FileCode className="h-4 w-4" />
-                  New Review
+                <Button variant="outline" className="justify-start gap-2" asChild>
+                  <Link href="/new-review">
+                    <FileCode className="h-4 w-4" />
+                    New Review
+                  </Link>
                 </Button>
-                <Button variant="outline" className="justify-start gap-2">
-                  <History className="h-4 w-4" />
-                  View History
+                <Button variant="outline" className="justify-start gap-2" asChild>
+                  <Link href="/history">
+                    <History className="h-4 w-4" />
+                    View History
+                  </Link>
                 </Button>
-                <Button variant="outline" className="justify-start gap-2">
-                  <Settings className="h-4 w-4" />
-                  Settings
+                <Button variant="outline" className="justify-start gap-2" asChild>
+                  <Link href="/settings">
+                    <Settings className="h-4 w-4" />
+                    Settings
+                  </Link>
                 </Button>
               </div>
             </CardContent>

@@ -12,6 +12,8 @@ import { Separator } from "@/components/ui/separator"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import ProtectedRoute from '@/components/ProtectedRoute'
+import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
 
 export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -53,6 +55,31 @@ export default function SettingsPage() {
   return (
     <ProtectedRoute>
       <div className="flex flex-col gap-6 p-4 md:gap-8 md:p-8">
+        <div className="flex items-center gap-4 mb-4">
+          <Link href="/dashboard">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-6 w-6"
+            >
+              <path d="m18 16 4-4-4-4" />
+              <path d="m6 8-4 4 4 4" />
+              <path d="m14.5 4-5 16" />
+            </svg>
+            <span className="font-bold">CodeReview</span>
+          </div>
+        </div>
+
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground">Manage your account settings and preferences.</p>
