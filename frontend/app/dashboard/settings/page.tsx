@@ -15,6 +15,7 @@ import ProtectedRoute from '@/components/ProtectedRoute'
 
 export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false)
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly")
 
   const handleSave = () => {
     setIsLoading(true)
@@ -24,6 +25,30 @@ export default function SettingsPage() {
       setIsLoading(false)
     }, 1000)
   }
+
+  const toggleBillingCycle = (cycle: "monthly" | "yearly") => {
+    setBillingCycle(cycle)
+  }
+  
+  // Calculate price based on billing cycle
+  const getBillingInfo = () => {
+    if (billingCycle === "monthly") {
+      return {
+        price: "₹2,499",
+        period: "/month",
+        nextBillingDate: "June 1, 2023"
+      }
+    } else {
+      return {
+        price: "₹25,489",
+        period: "/year",
+        nextBillingDate: "May 1, 2024",
+        savings: "Save 15%"
+      }
+    }
+  }
+
+  const billingInfo = getBillingInfo()
 
   return (
     <ProtectedRoute>
@@ -223,17 +248,39 @@ export default function SettingsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Professional Plan</div>
-                      <div className="text-sm text-muted-foreground">₹2,499/month</div>
+                      <div className="text-sm text-muted-foreground">{billingInfo.price}{billingInfo.period}</div>
+                      {billingInfo.savings && <div className="text-sm text-primary">{billingInfo.savings}</div>}
                     </div>
                     <Button variant="outline" size="sm">
                       Change plan
                     </Button>
                   </div>
                   <Separator className="my-4" />
+                  <div className="mb-4">
+                    <Label className="mb-2 block">Billing cycle</Label>
+                    <div className="inline-flex rounded-md" role="group">
+                      <Button 
+                        variant={billingCycle === "monthly" ? "default" : "outline"} 
+                        size="sm" 
+                        className="rounded-r-none"
+                        onClick={() => toggleBillingCycle("monthly")}
+                      >
+                        Monthly
+                      </Button>
+                      <Button 
+                        variant={billingCycle === "yearly" ? "default" : "outline"} 
+                        size="sm" 
+                        className="rounded-l-none"
+                        onClick={() => toggleBillingCycle("yearly")}
+                      >
+                        Yearly
+                      </Button>
+                    </div>
+                  </div>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Next billing date</span>
-                      <span className="font-medium">June 1, 2023</span>
+                      <span className="font-medium">{billingInfo.nextBillingDate}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Payment method</span>

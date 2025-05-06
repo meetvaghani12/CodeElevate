@@ -1,22 +1,39 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowRight, CheckCircle } from "lucide-react"
+import { ArrowRight, CheckCircle, Moon, Sun } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
+import { useTheme } from "next-themes"
 
 export default function Home() {
   const { user, logout } = useAuth()
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly")
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
 
   // Add effect to log auth state
   useEffect(() => {
     console.log('Home Page: Current auth state:', { user })
   }, [user])
 
+  // Make sure component is mounted to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const handleLogout = async () => {
     console.log('Home Page: Logout clicked')
     await logout()
+  }
+
+  const toggleBillingCycle = (cycle: "monthly" | "yearly") => {
+    setBillingCycle(cycle)
+  }
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark")
   }
 
   return (
@@ -52,6 +69,13 @@ export default function Home() {
             </Link>
           </nav>
           <div className="flex items-center gap-4">
+            {mounted && (
+              <Button variant="ghost" size="icon" onClick={toggleTheme} className="mr-2">
+                <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span className="sr-only">Toggle theme</span>
+              </Button>
+            )}
             {user ? (
               <>
                 <Link href="/dashboard">
@@ -92,12 +116,20 @@ export default function Home() {
               </div>
               <div className="flex flex-col gap-2 min-[400px]:flex-row">
                 {user ? (
-                  <Link href="/dashboard">
-                    <Button size="lg" className="gap-1.5">
-                      Go to Dashboard
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
+                  <>
+                    <Link href="/dashboard">
+                      <Button size="lg" className="gap-1.5">
+                        Go to Dashboard
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard/new-review">
+                      <Button size="lg" variant="outline" className="gap-1.5">
+                        New Review
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </>
                 ) : (
                   <>
                     <Link href="/signup">
@@ -219,8 +251,38 @@ export default function Home() {
                 <div className="p-6">
                   <h3 className="text-2xl font-bold">Starter</h3>
                   <div className="mt-4 text-center">
-                    <span className="text-4xl font-bold">₹999</span>
-                    <span className="text-muted-foreground">/month</span>
+                    <div className="inline-flex rounded-md" role="group">
+                      <Button 
+                        variant={billingCycle === "monthly" ? "default" : "outline"} 
+                        size="sm" 
+                        className="rounded-r-none"
+                        onClick={() => toggleBillingCycle("monthly")}
+                      >
+                        Monthly
+                      </Button>
+                      <Button 
+                        variant={billingCycle === "yearly" ? "default" : "outline"} 
+                        size="sm" 
+                        className="rounded-l-none"
+                        onClick={() => toggleBillingCycle("yearly")}
+                      >
+                        Yearly
+                      </Button>
+                    </div>
+                    <div className="mt-2">
+                      {billingCycle === "monthly" ? (
+                        <>
+                          <span className="text-4xl font-bold">₹999</span>
+                          <span className="text-muted-foreground">/month</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-4xl font-bold">₹10,189</span>
+                          <span className="text-muted-foreground">/year</span>
+                          <div className="text-sm text-primary">Save 15%</div>
+                        </>
+                      )}
+                    </div>
                   </div>
                   <ul className="mt-6 space-y-3">
                     <li className="flex items-center gap-2">
@@ -245,8 +307,38 @@ export default function Home() {
                 <div className="p-6">
                   <h3 className="text-2xl font-bold">Professional</h3>
                   <div className="mt-4 text-center">
-                    <span className="text-4xl font-bold">₹2,499</span>
-                    <span className="text-muted-foreground">/month</span>
+                    <div className="inline-flex rounded-md" role="group">
+                      <Button 
+                        variant={billingCycle === "monthly" ? "default" : "outline"} 
+                        size="sm" 
+                        className="rounded-r-none"
+                        onClick={() => toggleBillingCycle("monthly")}
+                      >
+                        Monthly
+                      </Button>
+                      <Button 
+                        variant={billingCycle === "yearly" ? "default" : "outline"} 
+                        size="sm" 
+                        className="rounded-l-none"
+                        onClick={() => toggleBillingCycle("yearly")}
+                      >
+                        Yearly
+                      </Button>
+                    </div>
+                    <div className="mt-2">
+                      {billingCycle === "monthly" ? (
+                        <>
+                          <span className="text-4xl font-bold">₹2,499</span>
+                          <span className="text-muted-foreground">/month</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-4xl font-bold">₹25,489</span>
+                          <span className="text-muted-foreground">/year</span>
+                          <div className="text-sm text-primary">Save 15%</div>
+                        </>
+                      )}
+                    </div>
                   </div>
                   <ul className="mt-6 space-y-3">
                     <li className="flex items-center gap-2">
@@ -275,8 +367,38 @@ export default function Home() {
                 <div className="p-6">
                   <h3 className="text-2xl font-bold">Enterprise</h3>
                   <div className="mt-4 text-center">
-                    <span className="text-4xl font-bold">₹7,999</span>
-                    <span className="text-muted-foreground">/month</span>
+                    <div className="inline-flex rounded-md" role="group">
+                      <Button 
+                        variant={billingCycle === "monthly" ? "default" : "outline"} 
+                        size="sm" 
+                        className="rounded-r-none"
+                        onClick={() => toggleBillingCycle("monthly")}
+                      >
+                        Monthly
+                      </Button>
+                      <Button 
+                        variant={billingCycle === "yearly" ? "default" : "outline"} 
+                        size="sm" 
+                        className="rounded-l-none"
+                        onClick={() => toggleBillingCycle("yearly")}
+                      >
+                        Yearly
+                      </Button>
+                    </div>
+                    <div className="mt-2">
+                      {billingCycle === "monthly" ? (
+                        <>
+                          <span className="text-4xl font-bold">₹7,999</span>
+                          <span className="text-muted-foreground">/month</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-4xl font-bold">₹81,589</span>
+                          <span className="text-muted-foreground">/year</span>
+                          <div className="text-sm text-primary">Save 15%</div>
+                        </>
+                      )}
+                    </div>
                   </div>
                   <ul className="mt-6 space-y-3">
                     <li className="flex items-center gap-2">
