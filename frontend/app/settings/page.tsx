@@ -132,11 +132,6 @@ export default function SettingsPage() {
                     <Label htmlFor="email">Email</Label>
                     <Input id="email" type="email" defaultValue="john.doe@example.com" />
                   </div>
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="company">Company</Label>
-                    <Input id="company" defaultValue="Acme Inc." />
-                  </div>
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <Button variant="outline">Cancel</Button>
