@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { ArrowLeft, ArrowRight, Code, FileCode, Upload, X } from "lucide-react"
+import { useState, useRef, useMemo } from "react"
+import { ArrowLeft, ArrowRight, Code, FileCode, Upload, X, Folder, ChevronRight, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -17,6 +17,15 @@ interface CodeFile {
   content: string
 }
 
+// Add a type for the folder structure
+interface FolderStructure {
+  name: string
+  path: string
+  isExpanded: boolean
+  files: CodeFile[]
+  folders: FolderStructure[]
+}
+
 export default function NewReviewPage() {
   const { toast } = useToast()
   const [files, setFiles] = useState<CodeFile[]>([])
@@ -25,10 +34,243 @@ export default function NewReviewPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [pastedCode, setPastedCode] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const folderInputRef = useRef<HTMLInputElement>(null)
+
+  // Add state for expanded folders
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
+
+  // Organize files into a folder structure
+  const folderStructure = useMemo(() => {
+    const root: FolderStructure = {
+      name: 'Root',
+      path: '',
+      isExpanded: true,
+      files: [],
+      folders: []
+    }
+
+    // Helper function to get or create a folder at a path
+    const getOrCreateFolder = (path: string): FolderStructure => {
+      if (!path) return root
+
+      const pathParts = path.split('/')
+      let currentFolder = root
+
+      // Navigate through the path, creating folders as needed
+      for (let i = 0; i < pathParts.length; i++) {
+        const folderName = pathParts[i]
+        const folderPath = pathParts.slice(0, i + 1).join('/')
+        
+        // Find the folder or create it
+        let folder = currentFolder.folders.find(f => f.name === folderName)
+        
+        if (!folder) {
+          folder = {
+            name: folderName,
+            path: folderPath,
+            isExpanded: expandedFolders.has(folderPath),
+            files: [],
+            folders: []
+          }
+          currentFolder.folders.push(folder)
+        }
+        
+        currentFolder = folder
+      }
+      
+      return currentFolder
+    }
+
+    // Place each file in its corresponding folder
+    files.forEach(file => {
+      const pathParts = file.name.split('/')
+      
+      if (pathParts.length === 1) {
+        // File is in the root
+        root.files.push(file)
+      } else {
+        // File is in a subfolder
+        const fileName = pathParts.pop() as string
+        const folderPath = pathParts.join('/')
+        const folder = getOrCreateFolder(folderPath)
+        
+        // Create a simplified version of the file with just the filename
+        const fileInFolder: CodeFile = {
+          name: file.name,
+          content: file.content
+        }
+        
+        folder.files.push(fileInFolder)
+      }
+    })
+
+    return root
+  }, [files, expandedFolders])
+
+  // Toggle folder expansion
+  const toggleFolder = (path: string) => {
+    setExpandedFolders(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(path)) {
+        newSet.delete(path)
+      } else {
+        newSet.add(path)
+      }
+      return newSet
+    })
+  }
+
+  // When uploading a folder, automatically expand the parent folders
+  const handleFolderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = event.target.files
+    if (!fileList || fileList.length === 0) return
+
+    // Track unique folder paths to auto-expand them
+    const foldersToExpand = new Set<string>()
+    
+    // Process all files, preserving folder structure
+    Array.from(fileList).forEach((file) => {
+      // Get relative path from webkitRelativePath
+      const relativePath = file.webkitRelativePath || ""
+      
+      // Extract folder structure (excluding file name)
+      const pathParts = relativePath.split('/')
+      const folderStructure = pathParts.slice(0, -1).join('/')
+      
+      // Add each parent folder path to the set
+      const parts = folderStructure.split('/')
+      let currentPath = ''
+      for (const part of parts) {
+        currentPath = currentPath ? `${currentPath}/${part}` : part
+        foldersToExpand.add(currentPath)
+      }
+      
+      processFile(file, folderStructure)
+    })
+
+    // Auto-expand the folders containing the new files
+    setExpandedFolders(prev => {
+      const newSet = new Set(prev)
+      foldersToExpand.forEach(path => newSet.add(path))
+      return newSet
+    })
+
+    // Reset folder input
+    if (folderInputRef.current) {
+      folderInputRef.current.value = ""
+    }
+  }
+
+  // Count total files in a folder including subfolders
+  const countFiles = (folder: FolderStructure): number => {
+    let count = folder.files.length
+    folder.folders.forEach(subFolder => {
+      count += countFiles(subFolder)
+    })
+    return count
+  }
+
+  // Render a folder and its contents recursively
+  const renderFolder = (folder: FolderStructure, level = 0) => {
+    const isExpanded = folder.path === '' || expandedFolders.has(folder.path)
+    const fileCount = countFiles(folder)
+    
+    return (
+      <div key={folder.path} className="space-y-1">
+        {folder.path && (
+          <div 
+            className="flex items-center px-2 py-1 rounded-md hover:bg-muted cursor-pointer"
+            onClick={() => toggleFolder(folder.path)}
+            style={{ paddingLeft: `${(level * 12) + 8}px` }}
+          >
+            {isExpanded ? <ChevronDown className="h-4 w-4 mr-1" /> : <ChevronRight className="h-4 w-4 mr-1" />}
+            <Folder className="h-4 w-4 mr-2 text-blue-400" />
+            <span className="text-sm font-medium truncate">{folder.name}</span>
+            {fileCount > 0 && (
+              <span className="ml-auto bg-muted rounded-full px-2 py-0.5 text-xs text-muted-foreground">
+                {fileCount}
+              </span>
+            )}
+          </div>
+        )}
+        
+        {isExpanded && (
+          <div className="space-y-1">
+            {folder.folders.map(subFolder => renderFolder(subFolder, level + 1))}
+            
+            {folder.files.map(file => {
+              // Extract just the filename from the full path
+              const fileName = file.name.split('/').pop() || file.name
+              
+              return (
+                <div key={file.name} className="flex items-center gap-2 pl-2" style={{ paddingLeft: `${(level * 12) + (folder.path ? 32 : 8)}px` }}>
+                  <Button
+                    variant={selectedFile === file.name ? "default" : "ghost"}
+                    className="justify-start gap-2 flex-grow h-8 px-2"
+                    onClick={() => handleFileSelect(file.name)}
+                  >
+                    <FileCode className="h-4 w-4" />
+                    <span className="truncate text-sm">{fileName}</span>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6" 
+                    onClick={() => handleRemoveFile(file.name)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   const handleFileSelect = (fileName: string) => {
     setSelectedFile(fileName)
     setReviewResult(null)
+  }
+
+  const processFile = (file: File, folderStructure = "") => {
+    // Skip hidden files and non-text files
+    if (file.name.startsWith('.') || 
+        (!file.type.includes('text') && !file.name.match(/\.(js|jsx|ts|tsx|py|java|c|cpp|html|css|json|md|txt)$/i))) {
+      return;
+    }
+
+    // Read file content
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const content = e.target?.result as string
+      setFiles((prevFiles) => {
+        // Create a file path that includes folder structure
+        const filePath = folderStructure ? `${folderStructure}/${file.name}` : file.name
+        
+        // Check if file already exists
+        const exists = prevFiles.some(f => f.name === filePath)
+        if (exists) {
+          toast({
+            title: "File already added",
+            description: `${filePath} is already in the list.`,
+            variant: "destructive"
+          })
+          return prevFiles
+        }
+
+        const newFiles = [...prevFiles, { name: filePath, content }]
+        
+        // Select the file if it's the first one
+        if (newFiles.length === 1 || !selectedFile) {
+          setSelectedFile(filePath)
+        }
+        
+        return newFiles
+      })
+    }
+    reader.readAsText(file)
   }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,48 +279,14 @@ export default function NewReviewPage() {
 
     // Process each file
     Array.from(fileList).forEach((file) => {
-      // Only accept text files
-      if (!file.type.includes('text') && !file.name.match(/\.(js|jsx|ts|tsx|py|java|c|cpp|html|css|json|md|txt)$/i)) {
-        toast({
-          title: "Invalid file type",
-          description: `${file.name} is not a supported code file.`,
-          variant: "destructive"
-        })
-        return
-      }
-
-      // Read file content
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const content = e.target?.result as string
-        setFiles((prevFiles) => {
-          // Check if file already exists
-          const exists = prevFiles.some(f => f.name === file.name)
-          if (exists) {
-            toast({
-              title: "File already added",
-              description: `${file.name} is already in the list.`,
-              variant: "destructive"
-            })
-            return prevFiles
-          }
-
-          const newFiles = [...prevFiles, { name: file.name, content }]
-          
-          // Select the file if it's the first one
-          if (newFiles.length === 1 || !selectedFile) {
-            setSelectedFile(file.name)
-          }
-          
-          return newFiles
-        })
-      }
-      reader.readAsText(file)
+      processFile(file)
     })
 
     // Reset file input
-    if (fileInputRef.current) {
+    if (event.target === fileInputRef.current) {
       fileInputRef.current.value = ""
+    } else if (event.target === folderInputRef.current) {
+      folderInputRef.current.value = ""
     }
   }
 
@@ -191,7 +399,7 @@ export default function NewReviewPage() {
                   <CardTitle>Files</CardTitle>
                   <CardDescription>Select a file to review</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-auto" style={{ maxHeight: '300px' }}>
                   {files.length === 0 ? (
                     <div className="flex h-20 items-center justify-center rounded-lg border border-dashed">
                       <p className="text-sm text-muted-foreground">
@@ -199,31 +407,12 @@ export default function NewReviewPage() {
                       </p>
                     </div>
                   ) : (
-                    <div className="grid gap-2">
-                      {files.map((file) => (
-                        <div key={file.name} className="flex items-center gap-2">
-                          <Button
-                            variant={selectedFile === file.name ? "default" : "outline"}
-                            className="justify-start gap-2 flex-grow"
-                            onClick={() => handleFileSelect(file.name)}
-                          >
-                            <FileCode className="h-4 w-4" />
-                            <span className="truncate">{file.name}</span>
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8" 
-                            onClick={() => handleRemoveFile(file.name)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                    <div className="space-y-1">
+                      {renderFolder(folderStructure)}
                     </div>
                   )}
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="flex flex-col gap-2">
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -232,13 +421,32 @@ export default function NewReviewPage() {
                     multiple
                     accept=".js,.jsx,.ts,.tsx,.py,.java,.c,.cpp,.html,.css,.json,.md,.txt"
                   />
-                  <Button 
-                    className="w-full gap-2"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload className="h-4 w-4" />
-                    Upload Files
-                  </Button>
+                  <input
+                    type="file"
+                    ref={folderInputRef}
+                    onChange={handleFolderChange}
+                    className="hidden"
+                    // @ts-ignore - These attributes aren't in the standard HTML attributes
+                    webkitdirectory=""
+                    directory=""
+                  />
+                  <div className="grid grid-cols-2 gap-2 w-full">
+                    <Button 
+                      className="gap-2"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload className="h-4 w-4" />
+                      Upload Files
+                    </Button>
+                    <Button 
+                      className="gap-2"
+                      variant="outline"
+                      onClick={() => folderInputRef.current?.click()}
+                    >
+                      <FileCode className="h-4 w-4" />
+                      Upload Folder
+                    </Button>
+                  </div>
                 </CardFooter>
               </Card>
 
