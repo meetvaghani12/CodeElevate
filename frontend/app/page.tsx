@@ -23,7 +23,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2 font-bold">
+          <Link href="/" className="flex items-center gap-2 font-bold">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -39,7 +39,7 @@ export default function Home() {
               <path d="m14.5 4-5 16" />
             </svg>
             <span>CodeReview</span>
-          </div>
+          </Link>
           <nav className="hidden gap-6 md:flex">
             <Link href="#features" className="text-sm font-medium transition-colors hover:text-primary">
               Features

@@ -106,7 +106,7 @@ export default function DashboardLayout({
             </div>
           </SheetContent>
         </Sheet>
-        <div className="flex items-center gap-2 font-bold">
+        <Link href="/" className="flex items-center gap-2 font-bold">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -122,7 +122,7 @@ export default function DashboardLayout({
             <path d="m14.5 4-5 16" />
           </svg>
           <span>CodeReview</span>
-        </div>
+        </Link>
         <div className="flex-1"></div>
         <div className="flex items-center gap-4">
           <ThemeToggle />
