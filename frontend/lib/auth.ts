@@ -103,4 +103,30 @@ export const authApi = {
     
     return await response.json();
   },
+
+  updateProfile: async (token: string, data: { firstName?: string; lastName?: string; email?: string }) => {
+    const response = await fetch(`${API_URL}/auth/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data),
+    });
+    
+    return await response.json();
+  },
+  
+  updatePassword: async (token: string, data: { currentPassword: string; newPassword: string }) => {
+    const response = await fetch(`${API_URL}/auth/password`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data),
+    });
+    
+    return await response.json();
+  },
 };

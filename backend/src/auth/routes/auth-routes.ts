@@ -9,6 +9,8 @@ import {
   resetPassword,
   logout,
   getProfile,
+  updateProfile,
+  updatePassword,
 } from './../controller/auth-controller';
 import {
   validateRequest,
@@ -16,6 +18,8 @@ import {
   loginValidationRules,
   otpValidationRules,
   passwordResetValidationRules,
+  updateProfileValidationRules,
+  updatePasswordValidationRules,
 } from './../middleware/validate.middleware';
 import { authenticate } from './../middleware/auth.middleware';
 import googleAuthRoutes from './google-auth-routes';
@@ -34,6 +38,8 @@ router.post('/reset-password', validateRequest(passwordResetValidationRules), re
 // Protected routes
 router.post('/logout', authenticate, logout);
 router.get('/profile', authenticate, getProfile);
+router.put('/profile', authenticate, validateRequest(updateProfileValidationRules), updateProfile);
+router.put('/password', authenticate, validateRequest(updatePasswordValidationRules), updatePassword);
 
 // Google OAuth routes
 router.use('/google', googleAuthRoutes);

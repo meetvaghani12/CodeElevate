@@ -1,16 +1,11 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
-import { generateOTP, verifyOTP, storeOTP } from '../utils/login-utils';
-import { sendVerificationEmail } from '../utils/mail';
+import { findUserByEmail, createUser, updateUser } from '../db/user';
+import { sendVerificationEmail } from '../utils/email';
+import { generateOTP, storeOTP, verifyOTP } from '../utils/otp';
 import { generateToken, verifyToken } from '../utils/jwt';
 import crypto from 'crypto';
-
-import { 
-  findUserByEmail, 
-  createUser, 
-  updateUser, 
-} from './../db/user';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -323,5 +318,121 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
   } catch (error) {
     console.error('GetProfile: Error details:', error);
     res.status(500).json({ message: 'Server error while fetching profile' });
+  }
+};
+
+export const updateProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    console.log('UpdateProfile: Request received', {
+      body: req.body,
+      user: req.user
+    });
+
+    if (!req.user) {
+      console.log('UpdateProfile: No user in request');
+      res.status(401).json({ message: 'Authentication required' });
+      return;
+    }
+
+    // Get current user
+    const currentUser = await findUserByEmail(req.user.email);
+    if (!currentUser) {
+      console.log('UpdateProfile: User not found');
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Extract fields from request body
+    const { firstName, lastName, email } = req.body;
+    
+    // Create update data object
+    const updateData: any = {};
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    
+    // If email is being updated, check it's not already in use
+    if (email !== undefined && email !== currentUser.email) {
+      const existingUser = await findUserByEmail(email);
+      if (existingUser) {
+        console.log('UpdateProfile: Email already in use');
+        res.status(400).json({ message: 'Email already in use' });
+        return;
+      }
+      updateData.email = email;
+    }
+    
+    // Only update if there are changes
+    if (Object.keys(updateData).length === 0) {
+      console.log('UpdateProfile: No changes to apply');
+      res.status(400).json({ message: 'No changes provided' });
+      return;
+    }
+    
+    // Update user profile
+    const updatedUser = await updateUser(currentUser.email, updateData);
+    console.log('UpdateProfile: User updated', updatedUser);
+    
+    // Return updated user info
+    res.status(200).json({
+      message: 'Profile updated successfully',
+      user: {
+        id: updatedUser.id,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        emailVerified: updatedUser.emailVerified,
+      },
+    });
+  } catch (error) {
+    console.error('UpdateProfile: Error details:', error);
+    res.status(500).json({ message: 'Server error while updating profile' });
+  }
+};
+
+export const updatePassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    console.log('UpdatePassword: Request received', {
+      user: req.user
+    });
+
+    if (!req.user) {
+      console.log('UpdatePassword: No user in request');
+      res.status(401).json({ message: 'Authentication required' });
+      return;
+    }
+
+    // Get current user
+    const user = await findUserByEmail(req.user.email);
+    if (!user) {
+      console.log('UpdatePassword: User not found');
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Extract password data
+    const { currentPassword, newPassword } = req.body;
+    
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      console.log('UpdatePassword: Current password is incorrect');
+      res.status(400).json({ message: 'Current password is incorrect' });
+      return;
+    }
+    
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    
+    // Update user password
+    await updateUser(user.email, {
+      password: hashedPassword,
+    });
+    
+    res.status(200).json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('UpdatePassword: Error details:', error);
+    res.status(500).json({ message: 'Server error while updating password' });
   }
 };
