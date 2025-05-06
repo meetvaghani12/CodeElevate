@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import ProtectedRoute from '@/components/ProtectedRoute'
+import Link from "next/link"
 
 export default function NewReviewPage() {
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
@@ -63,9 +64,11 @@ export default function NewReviewPage() {
     <ProtectedRoute>
       <div className="flex flex-col gap-6 p-4 md:gap-8 md:p-8">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" asChild>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          <Link href="/dashboard">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
           <h1 className="text-2xl font-bold tracking-tight">New Code Review</h1>
         </div>
 
@@ -184,4 +187,4 @@ export default function NewReviewPage() {
       </div>
     </ProtectedRoute>
   )
-}
+} 

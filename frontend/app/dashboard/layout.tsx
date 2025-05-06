@@ -82,7 +82,7 @@ export default function DashboardLayout({
                   },
                   {
                     title: "New Review",
-                    href: "/dashboard/new-review",
+                    href: "/new-review",
                     icon: Code2,
                   },
                   {
@@ -142,7 +142,7 @@ export default function DashboardLayout({
                   },
                   {
                     title: "New Review",
-                    href: "/dashboard/new-review",
+                    href: "/new-review",
                     icon: Code2,
                   },
                   {

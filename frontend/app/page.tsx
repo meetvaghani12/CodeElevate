@@ -123,7 +123,7 @@ export default function Home() {
                         <ArrowRight className="h-4 w-4" />
                       </Button>
                     </Link>
-                    <Link href="/dashboard/new-review">
+                    <Link href="/new-review">
                       <Button size="lg" variant="outline" className="gap-1.5">
                         New Review
                         <ArrowRight className="h-4 w-4" />
