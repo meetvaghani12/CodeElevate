@@ -150,7 +150,7 @@ export default function RegisterPage() {
           <path d="m6 8-4 4 4 4" />
           <path d="m14.5 4-5 16" />
         </svg>
-        <span>CodeReview</span>
+        <span>AnveshaCode</span>
       </div>
       <CardTitle className="text-2xl font-bold text-center">
         {showOtpVerification ? "Verify Your Email" : "Create an account"}

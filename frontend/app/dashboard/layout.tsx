@@ -70,7 +70,7 @@ export default function DashboardLayout({
                 <path d="m6 8-4 4 4 4" />
                 <path d="m14.5 4-5 16" />
               </svg>
-              <span>CodeReview</span>
+              <span>AnveshaCode</span>
             </div>
             <div className="mt-8">
               <SidebarNav
@@ -121,7 +121,7 @@ export default function DashboardLayout({
             <path d="m6 8-4 4 4 4" />
             <path d="m14.5 4-5 16" />
           </svg>
-          <span>CodeReview</span>
+          <span>AnveshaCode</span>
         </Link>
         <div className="flex-1"></div>
         <div className="flex items-center gap-4">

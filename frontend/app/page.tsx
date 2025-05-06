@@ -55,7 +55,7 @@ export default function Home() {
               <path d="m6 8-4 4 4 4" />
               <path d="m14.5 4-5 16" />
             </svg>
-            <span>CodeReview</span>
+            <span>AnveshaCode</span>
           </Link>
           <nav className="hidden gap-6 md:flex">
             <Link href="#features" className="text-sm font-medium transition-colors hover:text-primary">
@@ -66,6 +66,9 @@ export default function Home() {
             </Link>
             <Link href="#testimonials" className="text-sm font-medium transition-colors hover:text-primary">
               Testimonials
+            </Link>
+            <Link href="/contact" className="text-sm font-medium transition-colors hover:text-primary">
+              Contact Us
             </Link>
           </nav>
           <div className="flex items-center gap-4">
@@ -448,15 +451,18 @@ export default function Home() {
               <path d="m6 8-4 4 4 4" />
               <path d="m14.5 4-5 16" />
             </svg>
-            <span>CodeReview</span>
+            <span>AnveshaCode</span>
           </div>
-          <p className="text-sm text-muted-foreground">© 2025 CodeReview. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">© 2025 AnveshaCode. All rights reserved.</p>
           <div className="flex gap-4">
             <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
               Terms
             </Link>
             <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
               Privacy
+            </Link>
+            <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground">
+              Contact
             </Link>
           </div>
         </div>

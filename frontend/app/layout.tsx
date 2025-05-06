@@ -10,7 +10,7 @@ import { Toaster as HotToaster } from 'react-hot-toast'
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "CodeReview - Professional Code Reviews",
+  title: "AnveshaCode - Professional Code Reviews",
   description: "Get expert code reviews and improve your codebase with our AI-powered platform.",
 }
 
