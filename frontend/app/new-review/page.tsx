@@ -347,10 +347,21 @@ export default function NewReviewPage() {
   // Function to call the review API
   const callReviewAPI = async (code: string, fileName?: string) => {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast({
+          title: "Authentication Error",
+          description: "Please log in to save your review",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const response = await fetch('/api/review', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           code,
@@ -362,6 +373,27 @@ export default function NewReviewPage() {
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to get code review');
+      }
+
+      // Save the review to the database
+      const saveResponse = await fetch('/api/code-reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          fileName,
+          code,
+          review: data.review,
+          score: data.score,
+          issuesCount: data.issuesCount
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        console.error('Failed to save review to database');
+        throw new Error('Failed to save review to database');
       }
 
       setReviewScore(data.score);
@@ -733,14 +765,14 @@ export default function NewReviewPage() {
                       <Upload className="h-4 w-4" />
                       Upload Files
                     </Button>
-                    <Button 
+                      <Button
                       className="gap-2"
                       variant="outline"
                       onClick={() => folderInputRef.current?.click()}
-                    >
-                      <FileCode className="h-4 w-4" />
+                      >
+                        <FileCode className="h-4 w-4" />
                       Upload Folder
-                    </Button>
+                      </Button>
                   </div>
                 </CardFooter>
               </Card>

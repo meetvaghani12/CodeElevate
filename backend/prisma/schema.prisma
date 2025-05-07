@@ -1,5 +1,5 @@
-// Prisma schema file
-// Define your PostgreSQL connection and a sample User model
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -22,6 +22,7 @@ model User {
   emailVerified     DateTime?
   // image             String?
   twoFactorSecret   String?   @unique
+  codeReviews       CodeReview[]
   
   
   // Relations
@@ -54,4 +55,28 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+}
+
+model CodeReview {
+  id            String    @id @default(cuid())
+  userId        String
+  fileName      String?
+  code          String    @db.Text
+  review        String    @db.Text
+  score         Int
+  issuesCount   Int
+  status        ReviewStatus @default(COMPLETED)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+enum ReviewStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
 }

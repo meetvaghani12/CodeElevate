@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import authRoutes from './auth/routes/auth-routes';
+import codeReviewRoutes from './app/routes/code-review-routes';
 
 // Load environment variables
 dotenv.config();
@@ -37,6 +38,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/code-reviews', codeReviewRoutes);
 
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {

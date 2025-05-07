@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { ArrowUpDown, FileCode, Search, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -9,74 +10,162 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
+import { useToast } from "@/components/ui/use-toast"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import ReactMarkdown from "react-markdown"
+import { ComponentPropsWithoutRef } from "react"
+
+interface CodeReview {
+  id: string
+  fileName: string | null
+  code: string
+  review: string
+  score: number
+  issuesCount: number
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
+  createdAt: string
+  updatedAt: string
+}
 
 export default function ReviewHistory() {
-  const reviews = [
-    {
-      id: "REV-001",
-      name: "Authentication Service",
-      date: "2023-05-28",
-      issues: 12,
-      score: 85,
-      status: "completed",
-    },
-    {
-      id: "REV-002",
-      name: "API Endpoints",
-      date: "2023-05-27",
-      issues: 8,
-      score: 92,
-      status: "completed",
-    },
-    {
-      id: "REV-003",
-      name: "Frontend Components",
-      date: "2023-05-25",
-      issues: 24,
-      score: 68,
-      status: "completed",
-    },
-    {
-      id: "REV-004",
-      name: "Database Models",
-      date: "2023-05-21",
-      issues: 5,
-      score: 94,
-      status: "completed",
-    },
-    {
-      id: "REV-005",
-      name: "User Authentication Flow",
-      date: "2023-05-18",
-      issues: 15,
-      score: 78,
-      status: "completed",
-    },
-    {
-      id: "REV-006",
-      name: "Payment Processing",
-      date: "2023-05-15",
-      issues: 18,
-      score: 72,
-      status: "completed",
-    },
-    {
-      id: "REV-007",
-      name: "Error Handling",
-      date: "2023-05-12",
-      issues: 9,
-      score: 88,
-      status: "completed",
-    },
-    {
-      id: "REV-008",
-      name: "Notification System",
-      date: "2023-05-10",
-      issues: 7,
-      score: 90,
-      status: "completed",
-    },
-  ]
+  const { toast } = useToast()
+  const [reviews, setReviews] = useState<CodeReview[]>([])
+  const [filteredReviews, setFilteredReviews] = useState<CodeReview[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [scoreFilter, setScoreFilter] = useState<string>("all")
+  const [sortBy, setSortBy] = useState<string>("newest")
+  const [selectedReview, setSelectedReview] = useState<CodeReview | null>(null)
+
+  useEffect(() => {
+    fetchReviews()
+  }, [])
+
+  useEffect(() => {
+    filterAndSortReviews()
+  }, [reviews, searchQuery, statusFilter, scoreFilter, sortBy])
+
+  const fetchReviews = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      console.log('Debug: Token from localStorage:', token ? 'Token exists' : 'No token');
+      
+      if (!token) {
+        console.log('Debug: No token found, showing error toast');
+        toast({
+          title: "Authentication Error",
+          description: "Please log in to view your reviews",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('Debug: Making request to /api/code-reviews');
+      const response = await fetch('/api/code-reviews', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('Debug: Response status:', response.status);
+      
+      if (response.status === 401) {
+        console.log('Debug: Received 401, clearing token and showing error');
+        toast({
+          title: "Session Expired",
+          description: "Please log in again",
+          variant: "destructive"
+        });
+        localStorage.removeItem('token');
+        return;
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Debug: Error response:', errorText);
+        throw new Error(`Failed to fetch reviews: ${response.statusText} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('Debug: Successfully fetched reviews:', data);
+      setReviews(data);
+      setFilteredReviews(data);
+    } catch (error) {
+      console.error('Debug: Error in fetchReviews:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load review history",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const filterAndSortReviews = () => {
+    let filtered = [...reviews]
+
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(review => 
+        review.fileName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        review.code.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    }
+
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(review => review.status === statusFilter)
+    }
+
+    // Apply score filter
+    if (scoreFilter !== "all") {
+      filtered = filtered.filter(review => {
+        switch (scoreFilter) {
+          case "high":
+            return review.score >= 90
+          case "medium":
+            return review.score >= 70 && review.score < 90
+          case "low":
+            return review.score < 70
+          default:
+            return true
+        }
+      })
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        case "oldest":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        case "score-high":
+          return b.score - a.score
+        case "score-low":
+          return a.score - b.score
+        default:
+          return 0
+      }
+    })
+
+    setFilteredReviews(filtered)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString()
+  }
+
+  const getScoreColor = (score: number) => {
+    if (score >= 90) return "#10b981"
+    if (score >= 70) return "#f59e0b"
+    return "#ef4444"
+  }
 
   return (
     <ProtectedRoute>
@@ -120,20 +209,26 @@ export default function ReviewHistory() {
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               <div className="flex items-center gap-2">
                 <Search className="h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search reviews..." className="h-9" />
+                <Input 
+                  placeholder="Search reviews..." 
+                  className="h-9"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
-              <Select defaultValue="all">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="in-progress">In Progress</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
+                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                  <SelectItem value="FAILED">Failed</SelectItem>
+                  <SelectItem value="PENDING">Pending</SelectItem>
                 </SelectContent>
               </Select>
-              <Select defaultValue="all">
+              <Select value={scoreFilter} onValueChange={setScoreFilter}>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Score" />
                 </SelectTrigger>
@@ -144,7 +239,7 @@ export default function ReviewHistory() {
                   <SelectItem value="low">Low (0-69)</SelectItem>
                 </SelectContent>
               </Select>
-              <Select defaultValue="newest">
+              <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
@@ -165,88 +260,125 @@ export default function ReviewHistory() {
             <CardDescription>A list of all your past code reviews.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">ID</TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      Name
-                      <Button variant="ghost" size="icon" className="h-4 w-4">
-                        <ArrowUpDown className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      Date
-                      <Button variant="ghost" size="icon" className="h-4 w-4">
-                        <ArrowUpDown className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableHead>
-                  <TableHead className="text-center">Issues</TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      Score
-                      <Button variant="ghost" size="icon" className="h-4 w-4">
-                        <ArrowUpDown className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reviews.map((review) => (
-                  <TableRow key={review.id}>
-                    <TableCell className="font-medium">{review.id}</TableCell>
-                    <TableCell>{review.name}</TableCell>
-                    <TableCell>{review.date}</TableCell>
-                    <TableCell className="text-center">{review.issues}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="h-2 w-16 rounded-full"
-                          style={{
-                            background: `linear-gradient(90deg, ${
-                              review.score >= 90 ? "#10b981" : review.score >= 70 ? "#f59e0b" : "#ef4444"
-                            } ${review.score}%, transparent ${review.score}%)`,
-                          }}
-                        />
-                        <span>{review.score}%</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          review.status === "completed"
-                            ? "default"
-                            : review.status === "in-progress"
-                              ? "outline"
-                              : "destructive"
-                        }
-                      >
-                        {review.status === "completed"
-                          ? "Completed"
-                          : review.status === "in-progress"
-                            ? "In Progress"
-                            : "Failed"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon">
-                        <FileCode className="h-4 w-4" />
-                        <span className="sr-only">View</span>
-                      </Button>
-                    </TableCell>
+            {isLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <p className="text-muted-foreground">Loading reviews...</p>
+              </div>
+            ) : filteredReviews.length === 0 ? (
+              <div className="flex items-center justify-center h-32">
+                <p className="text-muted-foreground">No reviews found</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">ID</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-center">Issues</TableHead>
+                    <TableHead>Score</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredReviews.map((review) => (
+                    <TableRow key={review.id}>
+                      <TableCell className="font-medium">{review.id}</TableCell>
+                      <TableCell>{review.fileName || 'Pasted Code'}</TableCell>
+                      <TableCell>{formatDate(review.createdAt)}</TableCell>
+                      <TableCell className="text-center">{review.issuesCount}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-2 w-16 rounded-full"
+                            style={{
+                              background: `linear-gradient(90deg, ${getScoreColor(review.score)} ${review.score}%, transparent ${review.score}%)`,
+                            }}
+                          />
+                          <span>{review.score}%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            review.status === "COMPLETED"
+                              ? "default"
+                              : review.status === "IN_PROGRESS"
+                                ? "outline"
+                                : "destructive"
+                          }
+                        >
+                          {review.status.toLowerCase().replace('_', ' ')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => setSelectedReview(review)}
+                        >
+                          <FileCode className="h-4 w-4" />
+                          <span className="sr-only">View</span>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
+
+        <Dialog open={!!selectedReview} onOpenChange={() => setSelectedReview(null)}>
+          <DialogContent className="max-w-4xl h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span>Review Details</span>
+                  {selectedReview && (
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-2xl font-bold`} style={{ color: getScoreColor(selectedReview.score) }}>
+                          {selectedReview.score}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          /100
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">
+                          {selectedReview.issuesCount} {selectedReview.issuesCount === 1 ? 'Issue' : 'Issues'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="h-full pr-4">
+              {selectedReview && (
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown 
+                    components={{
+                      p: ({...props}: ComponentPropsWithoutRef<'p'>) => <p className="mb-4" {...props} />,
+                      ul: ({...props}: ComponentPropsWithoutRef<'ul'>) => <ul className="mb-4 space-y-2" {...props} />,
+                      ol: ({...props}: ComponentPropsWithoutRef<'ol'>) => <ol className="mb-4 space-y-2" {...props} />,
+                      li: ({...props}: ComponentPropsWithoutRef<'li'>) => <li className="mb-2" {...props} />,
+                      h1: ({...props}: ComponentPropsWithoutRef<'h1'>) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
+                      h2: ({...props}: ComponentPropsWithoutRef<'h2'>) => <h2 className="text-xl font-bold mb-3 mt-5" {...props} />,
+                      h3: ({...props}: ComponentPropsWithoutRef<'h3'>) => <h3 className="text-lg font-bold mb-2 mt-4" {...props} />,
+                      pre: ({...props}: ComponentPropsWithoutRef<'pre'>) => <pre className="mb-4 p-4 bg-muted rounded-md overflow-x-auto" {...props} />,
+                      code: ({...props}: ComponentPropsWithoutRef<'code'>) => <code className="bg-muted px-1 py-0.5 rounded" {...props} />
+                    }}
+                  >
+                    {selectedReview.review}
+                  </ReactMarkdown>
+                </div>
+              )}
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
       </div>
     </ProtectedRoute>
   )
