@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useMemo } from "react"
-import { ArrowLeft, ArrowRight, Code, FileCode, Upload, X, Folder, ChevronRight, ChevronDown } from "lucide-react"
+import { ArrowLeft, ArrowRight, Code, FileCode, Upload, X, Folder, ChevronRight, ChevronDown, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -10,6 +10,11 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Link from "next/link"
 import { useToast } from "@/components/ui/use-toast"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+// @ts-ignore - ReactMarkdown doesn't have TypeScript declarations
+import ReactMarkdown from "react-markdown"
 
 // File type definition
 interface CodeFile {
@@ -26,6 +31,9 @@ interface FolderStructure {
   folders: FolderStructure[]
 }
 
+// Review model type
+type ReviewModel = "llm" | "agent"
+
 export default function NewReviewPage() {
   const { toast } = useToast()
   const [files, setFiles] = useState<CodeFile[]>([])
@@ -33,11 +41,26 @@ export default function NewReviewPage() {
   const [reviewResult, setReviewResult] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [pastedCode, setPastedCode] = useState("")
+  const [reviewModel, setReviewModel] = useState<ReviewModel>("llm")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
 
   // Add state for expanded folders
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
+
+  // Handle review model change
+  const handleReviewModelChange = (value: string) => {
+    const newModel = value as ReviewModel
+    setReviewModel(newModel)
+    
+    // Show toast notification when AI Agent is selected
+    if (newModel === "agent") {
+      toast({
+        title: "Coming Soon",
+        description: "The AI Agent review feature will be available soon. Currently using LLM model for all reviews.",
+      })
+    }
+  }
 
   // Organize files into a folder structure
   const folderStructure = useMemo(() => {
@@ -301,72 +324,131 @@ export default function NewReviewPage() {
     }
   }
 
-  const handleReview = () => {
-    setIsLoading(true)
-    
-    const codeToReview = selectedFile
-      ? files.find(f => f.name === selectedFile)?.content
-      : pastedCode
+  // Function to call the review API
+  const callReviewAPI = async (code: string, fileName?: string) => {
+    try {
+      const response = await fetch('/api/review', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code,
+          fileName
+        }),
+      });
 
-    // In a real implementation, this would be an API call to your backend
-    setTimeout(() => {
-      setReviewResult(
-        "# Code Review Results\n\n" +
-        "## Security Issues\n" +
-        "- Check for potential security vulnerabilities\n" +
-        "- Validate all user inputs\n\n" +
-        "## Performance Improvements\n" +
-        "- Optimize algorithm efficiency\n" +
-        "- Consider caching results\n\n" +
-        "## Best Practices\n" +
-        "- Follow code style guidelines\n" +
-        "- Add proper documentation\n" +
-        "- Use meaningful variable names"
-      )
-      setIsLoading(false)
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get code review');
+      }
+
+      return data.review;
+    } catch (error) {
+      console.error('Error getting code review:', error);
+      throw error;
+    }
+  };
+
+  const handleReview = async () => {
+    if (!selectedFile) return;
+    
+    const fileToReview = files.find(f => f.name === selectedFile);
+    if (!fileToReview) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const review = await callReviewAPI(fileToReview.content, fileToReview.name);
+      setReviewResult(review);
       
       toast({
         title: "Code Review Complete",
-        description: "Your code has been analyzed successfully."
-      })
-    }, 2000)
-  }
+        description: "Your code has been analyzed successfully with Gemini 1.5 Flash",
+      });
+    } catch (error) {
+      toast({
+        title: "Review Failed",
+        description: error instanceof Error ? error.message : "Failed to get code review",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const handlePasteReview = () => {
+  const handlePasteReview = async () => {
     if (!pastedCode.trim()) {
       toast({
         title: "No code to review",
         description: "Please paste some code before submitting.",
         variant: "destructive"
-      })
-      return
+      });
+      return;
     }
 
-    setIsLoading(true)
-
-    // In a real implementation, this would be an API call to your backend
-    setTimeout(() => {
-      setReviewResult(
-        "# Code Review Results\n\n" +
-        "## Security Issues\n" +
-        "- Check for potential security vulnerabilities\n" +
-        "- Validate all user inputs\n\n" +
-        "## Performance Improvements\n" +
-        "- Optimize algorithm efficiency\n" +
-        "- Consider caching results\n\n" +
-        "## Best Practices\n" +
-        "- Follow code style guidelines\n" +
-        "- Add proper documentation\n" +
-        "- Use meaningful variable names"
-      )
-      setIsLoading(false)
+    setIsLoading(true);
+    
+    try {
+      const review = await callReviewAPI(pastedCode);
+      setReviewResult(review);
       
       toast({
         title: "Code Review Complete",
-        description: "Your pasted code has been analyzed successfully."
-      })
-    }, 2000)
-  }
+        description: "Your pasted code has been analyzed successfully with Gemini 1.5 Flash",
+      });
+    } catch (error) {
+      toast({
+        title: "Review Failed",
+        description: error instanceof Error ? error.message : "Failed to get code review",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Component for model selection
+  const ModelSelection = () => (
+    <div className="rounded-lg border p-4 mb-4">
+      <div className="mb-3 flex items-center gap-2">
+        <Sparkles className="h-5 w-5 text-primary" />
+        <span className="font-medium">Powered by Gemini 1.5 Flash</span>
+      </div>
+      <Separator className="my-3" />
+      <div className="mb-2 font-medium">Select Review Model</div>
+      <RadioGroup 
+        value={reviewModel} 
+        onValueChange={(value) => handleReviewModelChange(value)}
+        className="flex flex-col gap-3"
+      >
+        <div className="flex items-center space-x-2">
+          <RadioGroupItem value="llm" id="llm" />
+          <Label htmlFor="llm" className="cursor-pointer">
+            <div className="font-medium">LLM Model</div>
+            <p className="text-sm text-muted-foreground">
+              Faster reviews with general code suggestions
+            </p>
+          </Label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <RadioGroupItem value="agent" id="agent" />
+          <Label htmlFor="agent" className="cursor-pointer flex items-center">
+            <div className="font-medium flex items-center gap-2">
+              AI Agent
+              <span className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300 text-xs rounded px-2 py-0.5">
+                Coming Soon
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Deeper analysis with context-aware recommendations
+            </p>
+          </Label>
+        </div>
+      </RadioGroup>
+    </div>
+  )
 
   return (
     <ProtectedRoute>
@@ -393,6 +475,7 @@ export default function NewReviewPage() {
           </TabsList>
 
           <TabsContent value="upload" className="mt-4">
+            <ModelSelection />
             <div className="grid gap-4 md:grid-cols-3">
               <Card className="md:col-span-1">
                 <CardHeader>
@@ -471,8 +554,8 @@ export default function NewReviewPage() {
                       <div className="rounded-lg border p-4">
                         <ScrollArea className="h-[400px]">
                           {reviewResult ? (
-                            <div className="prose prose-sm dark:prose-invert">
-                              <pre className="text-sm whitespace-pre-wrap">{reviewResult}</pre>
+                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                              <ReactMarkdown>{reviewResult}</ReactMarkdown>
                             </div>
                           ) : (
                             <div className="flex h-full items-center justify-center">
@@ -516,6 +599,7 @@ export default function NewReviewPage() {
           </TabsContent>
 
           <TabsContent value="paste" className="mt-4">
+            <ModelSelection />
             <Card>
               <CardHeader>
                 <CardTitle>Paste Your Code</CardTitle>
@@ -533,8 +617,8 @@ export default function NewReviewPage() {
                 <div className="rounded-lg border p-4">
                   <ScrollArea className="h-[400px]">
                     {reviewResult ? (
-                      <div className="prose prose-sm dark:prose-invert">
-                        <pre className="text-sm whitespace-pre-wrap">{reviewResult}</pre>
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown>{reviewResult}</ReactMarkdown>
                       </div>
                     ) : (
                       <div className="flex h-full items-center justify-center">
