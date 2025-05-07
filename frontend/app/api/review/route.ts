@@ -29,6 +29,7 @@ You are an expert code reviewer. Please review the following ${fileName ? `file 
 5. Best practices recommendations
 6. Code organization and readability
 7. Potential bugs or edge cases
+8. In Which Language is the code written?
 
 CODE TO REVIEW:
 \`\`\`
