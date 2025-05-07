@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { ArrowUpDown, FileCode, Search, ArrowLeft } from "lucide-react"
+import { ArrowUpDown, FileCode, Search, ArrowLeft, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -167,6 +167,27 @@ export default function ReviewHistory() {
     return "#ef4444"
   }
 
+  const downloadReview = (review: CodeReview) => {
+    const fileName = review.fileName 
+      ? `${review.fileName.split('/').pop()?.replace(/\.[^/.]+$/, '')}_review.md`
+      : 'code_review.md';
+
+    const blob = new Blob([review.review], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Download Started",
+      description: "Your code review has been downloaded as a Markdown file.",
+    });
+  };
+
   return (
     <ProtectedRoute>
       <div className="flex flex-col gap-6 p-4 md:gap-8 md:p-8">
@@ -313,14 +334,26 @@ export default function ReviewHistory() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => setSelectedReview(review)}
-                        >
-                          <FileCode className="h-4 w-4" />
-                          <span className="sr-only">View</span>
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => setSelectedReview(review)}
+                            title="View Review"
+                          >
+                            <FileCode className="h-4 w-4" />
+                            <span className="sr-only">View</span>
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => downloadReview(review)}
+                            title="Download Review"
+                          >
+                            <Download className="h-4 w-4" />
+                            <span className="sr-only">Download</span>
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
