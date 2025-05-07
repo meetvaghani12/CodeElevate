@@ -33,7 +33,14 @@ CODE TO REVIEW:
 ${code}
 \`\`\`
 
-Format your response in Markdown.
+Format your response in Markdown with the following requirements:
+- Use clear headings for each section
+- Add at least one blank line between each point or recommendation
+- Use bullet points for individual items
+- Include code examples where relevant
+- Be specific and actionable in your feedback
+
+Your response should be well-formatted with proper spacing between sections and points.
 `;
 
     // Call the Gemini API with the correct URL format

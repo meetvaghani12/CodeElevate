@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 // @ts-ignore - ReactMarkdown doesn't have TypeScript declarations
 import ReactMarkdown from "react-markdown"
+import { ComponentPropsWithoutRef } from "react"
 
 // File type definition
 interface CodeFile {
@@ -414,7 +415,7 @@ export default function NewReviewPage() {
     <div className="rounded-lg border p-4 mb-4">
       <div className="mb-3 flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-primary" />
-        <span className="font-medium">Powered by Gemini 1.5 Flash</span>
+        <span className="font-medium">Powered by Vaghani Gpt</span>
       </div>
       <Separator className="my-3" />
       <div className="mb-2 font-medium">Select Review Model</div>
@@ -555,7 +556,21 @@ export default function NewReviewPage() {
                         <ScrollArea className="h-[400px]">
                           {reviewResult ? (
                             <div className="prose prose-sm dark:prose-invert max-w-none">
-                              <ReactMarkdown>{reviewResult}</ReactMarkdown>
+                              <ReactMarkdown 
+                                components={{
+                                  p: ({...props}: ComponentPropsWithoutRef<'p'>) => <p className="mb-4" {...props} />,
+                                  ul: ({...props}: ComponentPropsWithoutRef<'ul'>) => <ul className="mb-4 space-y-2" {...props} />,
+                                  ol: ({...props}: ComponentPropsWithoutRef<'ol'>) => <ol className="mb-4 space-y-2" {...props} />,
+                                  li: ({...props}: ComponentPropsWithoutRef<'li'>) => <li className="mb-2" {...props} />,
+                                  h1: ({...props}: ComponentPropsWithoutRef<'h1'>) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
+                                  h2: ({...props}: ComponentPropsWithoutRef<'h2'>) => <h2 className="text-xl font-bold mb-3 mt-5" {...props} />,
+                                  h3: ({...props}: ComponentPropsWithoutRef<'h3'>) => <h3 className="text-lg font-bold mb-2 mt-4" {...props} />,
+                                  pre: ({...props}: ComponentPropsWithoutRef<'pre'>) => <pre className="mb-4 p-4 bg-muted rounded-md overflow-x-auto" {...props} />,
+                                  code: ({...props}: ComponentPropsWithoutRef<'code'>) => <code className="bg-muted px-1 py-0.5 rounded" {...props} />
+                                }}
+                              >
+                                {reviewResult}
+                              </ReactMarkdown>
                             </div>
                           ) : (
                             <div className="flex h-full items-center justify-center">
@@ -618,7 +633,21 @@ export default function NewReviewPage() {
                   <ScrollArea className="h-[400px]">
                     {reviewResult ? (
                       <div className="prose prose-sm dark:prose-invert max-w-none">
-                        <ReactMarkdown>{reviewResult}</ReactMarkdown>
+                        <ReactMarkdown 
+                          components={{
+                            p: ({...props}: ComponentPropsWithoutRef<'p'>) => <p className="mb-4" {...props} />,
+                            ul: ({...props}: ComponentPropsWithoutRef<'ul'>) => <ul className="mb-4 space-y-2" {...props} />,
+                            ol: ({...props}: ComponentPropsWithoutRef<'ol'>) => <ol className="mb-4 space-y-2" {...props} />,
+                            li: ({...props}: ComponentPropsWithoutRef<'li'>) => <li className="mb-2" {...props} />,
+                            h1: ({...props}: ComponentPropsWithoutRef<'h1'>) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
+                            h2: ({...props}: ComponentPropsWithoutRef<'h2'>) => <h2 className="text-xl font-bold mb-3 mt-5" {...props} />,
+                            h3: ({...props}: ComponentPropsWithoutRef<'h3'>) => <h3 className="text-lg font-bold mb-2 mt-4" {...props} />,
+                            pre: ({...props}: ComponentPropsWithoutRef<'pre'>) => <pre className="mb-4 p-4 bg-muted rounded-md overflow-x-auto" {...props} />,
+                            code: ({...props}: ComponentPropsWithoutRef<'code'>) => <code className="bg-muted px-1 py-0.5 rounded" {...props} />
+                          }}
+                        >
+                          {reviewResult}
+                        </ReactMarkdown>
                       </div>
                     ) : (
                       <div className="flex h-full items-center justify-center">
