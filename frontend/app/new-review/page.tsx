@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useMemo } from "react"
-import { ArrowLeft, ArrowRight, Code, FileCode, Upload, X, Folder, ChevronRight, ChevronDown, Sparkles, Maximize2, Minimize2 } from "lucide-react"
+import { ArrowLeft, ArrowRight, Code, FileCode, Upload, X, Folder, ChevronRight, ChevronDown, Sparkles, Maximize2, Minimize2, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -412,6 +412,30 @@ export default function NewReviewPage() {
     }
   };
 
+  // Function to download review as markdown file
+  const downloadReview = () => {
+    if (!reviewResult) return;
+
+    const fileName = selectedFile 
+      ? `${selectedFile.split('/').pop()?.replace(/\.[^/.]+$/, '')}_review.md`
+      : 'code_review.md';
+
+    const blob = new Blob([reviewResult], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Download Started",
+      description: "Your code review has been downloaded as a Markdown file.",
+    });
+  };
+
   // Component for model selection
   const ModelSelection = () => (
     <div className="rounded-lg border p-4 mb-4">
@@ -474,13 +498,24 @@ export default function NewReviewPage() {
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Code Review Results</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsFullScreen(false)}
-            >
-              <Minimize2 className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={downloadReview}
+                title="Download Review"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsFullScreen(false)}
+                title="Exit Full Screen"
+              >
+                <Minimize2 className="h-4 w-4" />
+              </Button>
+            </div>
           </DialogTitle>
         </DialogHeader>
         <ScrollArea className="h-full pr-4">
@@ -511,15 +546,28 @@ export default function NewReviewPage() {
     <div className="rounded-lg border p-4">
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-medium">Review Results</h3>
-        {reviewResult && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsFullScreen(true)}
-          >
-            <Maximize2 className="h-4 w-4" />
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {reviewResult && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={downloadReview}
+                title="Download Review"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsFullScreen(true)}
+                title="View Full Screen"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
       </div>
       <ScrollArea className="h-[400px]">
         {isLoading ? (
