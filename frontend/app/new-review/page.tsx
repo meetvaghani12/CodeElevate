@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useMemo } from "react"
-import { ArrowLeft, ArrowRight, Code, FileCode, Upload, X, Folder, ChevronRight, ChevronDown, Sparkles } from "lucide-react"
+import { ArrowLeft, ArrowRight, Code, FileCode, Upload, X, Folder, ChevronRight, ChevronDown, Sparkles, Maximize2, Minimize2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator"
 // @ts-ignore - ReactMarkdown doesn't have TypeScript declarations
 import ReactMarkdown from "react-markdown"
 import { ComponentPropsWithoutRef } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 // File type definition
 interface CodeFile {
@@ -43,6 +44,7 @@ export default function NewReviewPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [pastedCode, setPastedCode] = useState("")
   const [reviewModel, setReviewModel] = useState<ReviewModel>("llm")
+  const [isFullScreen, setIsFullScreen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
 
@@ -451,6 +453,106 @@ export default function NewReviewPage() {
     </div>
   )
 
+  // Typing animation component
+  const TypingAnimation = () => (
+    <div className="flex flex-col items-center justify-center h-full space-y-4">
+      <div className="flex space-x-2">
+        <div className="w-3 h-3 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+        <div className="w-3 h-3 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+        <div className="w-3 h-3 bg-primary rounded-full animate-bounce"></div>
+      </div>
+      <p className="text-muted-foreground text-center">
+        Analyzing your code with Vaghani GPT...
+      </p>
+    </div>
+  )
+
+  // Full screen review dialog
+  const FullScreenReview = () => (
+    <Dialog open={isFullScreen} onOpenChange={setIsFullScreen}>
+      <DialogContent className="max-w-4xl h-[80vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Code Review Results</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsFullScreen(false)}
+            >
+              <Minimize2 className="h-4 w-4" />
+            </Button>
+          </DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="h-full pr-4">
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown 
+              components={{
+                p: ({...props}: ComponentPropsWithoutRef<'p'>) => <p className="mb-4" {...props} />,
+                ul: ({...props}: ComponentPropsWithoutRef<'ul'>) => <ul className="mb-4 space-y-2" {...props} />,
+                ol: ({...props}: ComponentPropsWithoutRef<'ol'>) => <ol className="mb-4 space-y-2" {...props} />,
+                li: ({...props}: ComponentPropsWithoutRef<'li'>) => <li className="mb-2" {...props} />,
+                h1: ({...props}: ComponentPropsWithoutRef<'h1'>) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
+                h2: ({...props}: ComponentPropsWithoutRef<'h2'>) => <h2 className="text-xl font-bold mb-3 mt-5" {...props} />,
+                h3: ({...props}: ComponentPropsWithoutRef<'h3'>) => <h3 className="text-lg font-bold mb-2 mt-4" {...props} />,
+                pre: ({...props}: ComponentPropsWithoutRef<'pre'>) => <pre className="mb-4 p-4 bg-muted rounded-md overflow-x-auto" {...props} />,
+                code: ({...props}: ComponentPropsWithoutRef<'code'>) => <code className="bg-muted px-1 py-0.5 rounded" {...props} />
+              }}
+            >
+              {reviewResult}
+            </ReactMarkdown>
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  )
+
+  // Update the review result display in both tabs
+  const ReviewResult = () => (
+    <div className="rounded-lg border p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-medium">Review Results</h3>
+        {reviewResult && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsFullScreen(true)}
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+      <ScrollArea className="h-[400px]">
+        {isLoading ? (
+          <TypingAnimation />
+        ) : reviewResult ? (
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown 
+              components={{
+                p: ({...props}: ComponentPropsWithoutRef<'p'>) => <p className="mb-4" {...props} />,
+                ul: ({...props}: ComponentPropsWithoutRef<'ul'>) => <ul className="mb-4 space-y-2" {...props} />,
+                ol: ({...props}: ComponentPropsWithoutRef<'ol'>) => <ol className="mb-4 space-y-2" {...props} />,
+                li: ({...props}: ComponentPropsWithoutRef<'li'>) => <li className="mb-2" {...props} />,
+                h1: ({...props}: ComponentPropsWithoutRef<'h1'>) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
+                h2: ({...props}: ComponentPropsWithoutRef<'h2'>) => <h2 className="text-xl font-bold mb-3 mt-5" {...props} />,
+                h3: ({...props}: ComponentPropsWithoutRef<'h3'>) => <h3 className="text-lg font-bold mb-2 mt-4" {...props} />,
+                pre: ({...props}: ComponentPropsWithoutRef<'pre'>) => <pre className="mb-4 p-4 bg-muted rounded-md overflow-x-auto" {...props} />,
+                code: ({...props}: ComponentPropsWithoutRef<'code'>) => <code className="bg-muted px-1 py-0.5 rounded" {...props} />
+              }}
+            >
+              {reviewResult}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <p className="text-center text-muted-foreground">
+              Click "Review Code" to analyze this file
+            </p>
+          </div>
+        )}
+      </ScrollArea>
+    </div>
+  )
+
   return (
     <ProtectedRoute>
       <div className="flex flex-col gap-6 p-4 md:gap-8 md:p-8">
@@ -552,35 +654,7 @@ export default function NewReviewPage() {
                         </ScrollArea>
                       </div>
 
-                      <div className="rounded-lg border p-4">
-                        <ScrollArea className="h-[400px]">
-                          {reviewResult ? (
-                            <div className="prose prose-sm dark:prose-invert max-w-none">
-                              <ReactMarkdown 
-                                components={{
-                                  p: ({...props}: ComponentPropsWithoutRef<'p'>) => <p className="mb-4" {...props} />,
-                                  ul: ({...props}: ComponentPropsWithoutRef<'ul'>) => <ul className="mb-4 space-y-2" {...props} />,
-                                  ol: ({...props}: ComponentPropsWithoutRef<'ol'>) => <ol className="mb-4 space-y-2" {...props} />,
-                                  li: ({...props}: ComponentPropsWithoutRef<'li'>) => <li className="mb-2" {...props} />,
-                                  h1: ({...props}: ComponentPropsWithoutRef<'h1'>) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
-                                  h2: ({...props}: ComponentPropsWithoutRef<'h2'>) => <h2 className="text-xl font-bold mb-3 mt-5" {...props} />,
-                                  h3: ({...props}: ComponentPropsWithoutRef<'h3'>) => <h3 className="text-lg font-bold mb-2 mt-4" {...props} />,
-                                  pre: ({...props}: ComponentPropsWithoutRef<'pre'>) => <pre className="mb-4 p-4 bg-muted rounded-md overflow-x-auto" {...props} />,
-                                  code: ({...props}: ComponentPropsWithoutRef<'code'>) => <code className="bg-muted px-1 py-0.5 rounded" {...props} />
-                                }}
-                              >
-                                {reviewResult}
-                              </ReactMarkdown>
-                            </div>
-                          ) : (
-                            <div className="flex h-full items-center justify-center">
-                              <p className="text-center text-muted-foreground">
-                                Click "Review Code" to analyze this file
-                              </p>
-                            </div>
-                          )}
-                        </ScrollArea>
-                      </div>
+                      <ReviewResult />
                     </div>
                   ) : (
                     <div className="flex h-[400px] items-center justify-center rounded-lg border">
@@ -629,35 +703,7 @@ export default function NewReviewPage() {
                     onChange={(e) => setPastedCode(e.target.value)}
                   />
                 </div>
-                <div className="rounded-lg border p-4">
-                  <ScrollArea className="h-[400px]">
-                    {reviewResult ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
-                        <ReactMarkdown 
-                          components={{
-                            p: ({...props}: ComponentPropsWithoutRef<'p'>) => <p className="mb-4" {...props} />,
-                            ul: ({...props}: ComponentPropsWithoutRef<'ul'>) => <ul className="mb-4 space-y-2" {...props} />,
-                            ol: ({...props}: ComponentPropsWithoutRef<'ol'>) => <ol className="mb-4 space-y-2" {...props} />,
-                            li: ({...props}: ComponentPropsWithoutRef<'li'>) => <li className="mb-2" {...props} />,
-                            h1: ({...props}: ComponentPropsWithoutRef<'h1'>) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
-                            h2: ({...props}: ComponentPropsWithoutRef<'h2'>) => <h2 className="text-xl font-bold mb-3 mt-5" {...props} />,
-                            h3: ({...props}: ComponentPropsWithoutRef<'h3'>) => <h3 className="text-lg font-bold mb-2 mt-4" {...props} />,
-                            pre: ({...props}: ComponentPropsWithoutRef<'pre'>) => <pre className="mb-4 p-4 bg-muted rounded-md overflow-x-auto" {...props} />,
-                            code: ({...props}: ComponentPropsWithoutRef<'code'>) => <code className="bg-muted px-1 py-0.5 rounded" {...props} />
-                          }}
-                        >
-                          {reviewResult}
-                        </ReactMarkdown>
-                      </div>
-                    ) : (
-                      <div className="flex h-full items-center justify-center">
-                        <p className="text-center text-muted-foreground">
-                          Paste your code and click "Review Code" to analyze
-                        </p>
-                      </div>
-                    )}
-                  </ScrollArea>
-                </div>
+                <ReviewResult />
               </CardContent>
               <CardFooter className="flex justify-between">
                 <Button 
@@ -681,6 +727,8 @@ export default function NewReviewPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <FullScreenReview />
       </div>
     </ProtectedRoute>
   )
