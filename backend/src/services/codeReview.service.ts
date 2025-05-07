@@ -10,6 +10,7 @@ export interface CreateCodeReviewDto {
   review: string;
   score: number;
   issuesCount: number;
+  language?: string;
 }
 
 export class CodeReviewService {
@@ -28,6 +29,7 @@ export class CodeReviewService {
         review: data.review,
         score: data.score,
         issuesCount: data.issuesCount,
+        language: data.language,
         status: 'COMPLETED'
       }
     });
@@ -47,6 +49,7 @@ export class CodeReviewService {
         score: true,
         issuesCount: true,
         status: true,
+        language: true,
         createdAt: true,
         updatedAt: true
       }

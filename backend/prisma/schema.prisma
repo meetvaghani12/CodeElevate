@@ -65,6 +65,7 @@ model CodeReview {
   review        String    @db.Text
   score         Int
   issuesCount   Int
+  language      String?   // Programming language of the code
   status        ReviewStatus @default(COMPLETED)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -72,6 +73,7 @@ model CodeReview {
 
   @@index([userId])
   @@index([createdAt])
+  @@index([language])
 }
 
 enum ReviewStatus {

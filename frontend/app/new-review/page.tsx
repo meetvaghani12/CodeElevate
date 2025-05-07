@@ -387,7 +387,8 @@ export default function NewReviewPage() {
           code,
           review: data.review,
           score: data.score,
-          issuesCount: data.issuesCount
+          issuesCount: data.issuesCount,
+          language: data.language
         }),
       });
 

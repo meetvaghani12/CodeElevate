@@ -64,7 +64,7 @@ export class AnalyticsService {
         });
       }
       return acc;
-    }, []);
+    }, []).sort((a, b) => b.value - a.value); // Sort by frequency
 
     // Group by issue type
     const issueTypeData = reviews.reduce((acc: any[], review) => {

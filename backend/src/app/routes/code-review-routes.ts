@@ -61,7 +61,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response): Pro
       return res.status(401).json({ message: 'User not authenticated' });
     }
     const userId = req.user.id;
-    const { fileName, code, review, score, issuesCount } = req.body;
+    const { fileName, code, review, score, issuesCount, language } = req.body;
 
     const newCodeReview = await prisma.codeReview.create({
       data: {
@@ -71,6 +71,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response): Pro
         review,
         score,
         issuesCount,
+        language,
         status: 'COMPLETED',
       },
     });

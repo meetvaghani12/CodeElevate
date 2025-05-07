@@ -29,7 +29,7 @@ You are an expert code reviewer. Please review the following ${fileName ? `file 
 5. Best practices recommendations
 6. Code organization and readability
 7. Potential bugs or edge cases
-8. In Which Language is the code written?
+8. Language: [Detect and specify the programming language]
 
 CODE TO REVIEW:
 \`\`\`
@@ -44,6 +44,7 @@ Format your response in Markdown with the following requirements:
 - Use bullet points for individual items
 - Include code examples where relevant
 - Be specific and actionable in your feedback
+- Always include the "Language: [language]" line exactly as shown above
 
 Your response should be well-formatted with proper spacing between sections and points.
 `;
@@ -86,13 +87,16 @@ Your response should be well-formatted with proper spacing between sections and 
     const review = data.candidates?.[0]?.content?.parts?.[0]?.text || 
                    "No review generated. Please try again.";
 
-    // Extract score and issues count from the review
+    // Extract score, issues count, and language from the review
     const scoreMatch = review.match(/Score:\s*(\d+)\/100/i);
     const issuesMatch = review.match(/Total Issues Found:\s*(\d+)/i);
+    const languageMatch = review.match(/Language:\s*([^\n]+)/i);
+    
     const score = scoreMatch ? parseInt(scoreMatch[1]) : null;
     const issuesCount = issuesMatch ? parseInt(issuesMatch[1]) : null;
+    const language = languageMatch ? languageMatch[1].trim() : null;
 
-    return NextResponse.json({ review, score, issuesCount });
+    return NextResponse.json({ review, score, issuesCount, language });
   } catch (error) {
     console.error("Error during code review:", error);
     return NextResponse.json(
