@@ -30,6 +30,14 @@ You are an expert code reviewer. Please review the following ${fileName ? `file 
 6. Code organization and readability
 7. Potential bugs or edge cases
 8. Language: [Detect and specify the programming language]
+9. Suggested Code Changes: For each major issue or improvement, provide a specific code suggestion showing how to fix or improve it. Format each suggestion as:
+   \`\`\`suggestion
+   // Original code
+   [original code snippet]
+   
+   // Suggested change
+   [improved code snippet]
+   \`\`\`
 
 CODE TO REVIEW:
 \`\`\`
@@ -45,6 +53,7 @@ Format your response in Markdown with the following requirements:
 - Include code examples where relevant
 - Be specific and actionable in your feedback
 - Always include the "Language: [language]" line exactly as shown above
+- For each code suggestion, clearly mark it with \`\`\`suggestion\`\`\` and show both original and improved code
 
 Your response should be well-formatted with proper spacing between sections and points.
 `;
@@ -87,16 +96,23 @@ Your response should be well-formatted with proper spacing between sections and 
     const review = data.candidates?.[0]?.content?.parts?.[0]?.text || 
                    "No review generated. Please try again.";
 
-    // Extract score, issues count, and language from the review
+    // Extract score, issues count, language, and code suggestions from the review
     const scoreMatch = review.match(/Score:\s*(\d+)\/100/i);
     const issuesMatch = review.match(/Total Issues Found:\s*(\d+)/i);
     const languageMatch = review.match(/Language:\s*([^\n]+)/i);
+    
+    // Extract code suggestions
+    const suggestionsMatch = review.match(/```suggestion\n([\s\S]*?)```/g);
+    const suggestions = suggestionsMatch ? suggestionsMatch.map((suggestion: string) => {
+      const content = suggestion.replace(/```suggestion\n/, '').replace(/```$/, '');
+      return content.trim();
+    }) : [];
     
     const score = scoreMatch ? parseInt(scoreMatch[1]) : null;
     const issuesCount = issuesMatch ? parseInt(issuesMatch[1]) : null;
     const language = languageMatch ? languageMatch[1].trim() : null;
 
-    return NextResponse.json({ review, score, issuesCount, language });
+    return NextResponse.json({ review, score, issuesCount, language, suggestions });
   } catch (error) {
     console.error("Error during code review:", error);
     return NextResponse.json(
