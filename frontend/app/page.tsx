@@ -273,38 +273,36 @@ export default function Home() {
                       </Button>
                     </div>
                     <div className="mt-2">
-                      {billingCycle === "monthly" ? (
+                      {/* {billingCycle === "monthly" ? ( */}
                         <>
-                          <span className="text-4xl font-bold">₹999</span>
-                          <span className="text-muted-foreground">/month</span>
+                          <span className="text-4xl font-bold">Free</span>
+                          
                         </>
-                      ) : (
+                      {/* ) : ( */}
                         <>
-                          <span className="text-4xl font-bold">₹10,189</span>
+                          {/* <span className="text-4xl font-bold">₹10,189</span>
                           <span className="text-muted-foreground">/year</span>
-                          <div className="text-sm text-primary">Save 15%</div>
+                          <div className="text-sm text-primary">Save 15%</div> */}
                         </>
-                      )}
+                      {/* )} */}
                     </div>
                   </div>
                   <ul className="mt-6 space-y-3">
                     <li className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>Up to 5 projects</span>
+                      <span>Up to 5 Projects</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>50 file reviews per month</span>
+                      <span>Up to 30 File Reviews</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>Basic analytics</span>
+                      <span>Basic LLM Model</span>
                     </li>
                   </ul>
                 </div>
-                <div className="flex flex-col p-6 pt-0">
-                  <Button>Get Started</Button>
-                </div>
+              
               </div>
               <div className="flex flex-col rounded-lg border shadow-sm bg-primary/5 border-primary/20">
                 <div className="p-6">
@@ -331,14 +329,14 @@ export default function Home() {
                     <div className="mt-2">
                       {billingCycle === "monthly" ? (
                         <>
-                          <span className="text-4xl font-bold">₹2,499</span>
+                          <span className="text-4xl font-bold">₹199</span>
                           <span className="text-muted-foreground">/month</span>
                         </>
                       ) : (
                         <>
-                          <span className="text-4xl font-bold">₹25,489</span>
+                          <span className="text-4xl font-bold">₹1999</span>
                           <span className="text-muted-foreground">/year</span>
-                          <div className="text-sm text-primary">Save 15%</div>
+                          <div className="text-sm text-primary">Save 16%</div>
                         </>
                       )}
                     </div>
@@ -346,19 +344,15 @@ export default function Home() {
                   <ul className="mt-6 space-y-3">
                     <li className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>Up to 15 projects</span>
+                      <span>Up to 25 Projects Per Month</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>200 file reviews per month</span>
+                      <span>200 File Reviews Per Month</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>Advanced analytics</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>Team collaboration</span>
+                      <span>Advanced LLM Models</span>
                     </li>
                   </ul>
                 </div>
@@ -391,14 +385,14 @@ export default function Home() {
                     <div className="mt-2">
                       {billingCycle === "monthly" ? (
                         <>
-                          <span className="text-4xl font-bold">₹7,999</span>
+                          <span className="text-4xl font-bold">₹399</span>
                           <span className="text-muted-foreground">/month</span>
                         </>
                       ) : (
                         <>
-                          <span className="text-4xl font-bold">₹81,589</span>
+                          <span className="text-4xl font-bold">₹3999</span>
                           <span className="text-muted-foreground">/year</span>
-                          <div className="text-sm text-primary">Save 15%</div>
+                          <div className="text-sm text-primary">Save 17%</div>
                         </>
                       )}
                     </div>
@@ -406,28 +400,20 @@ export default function Home() {
                   <ul className="mt-6 space-y-3">
                     <li className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>Unlimited projects</span>
+                      <span>Unlimited Projects</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>Unlimited file reviews</span>
+                      <span>Unlimited File Reviews</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>Custom analytics</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>Priority support</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>Custom integrations</span>
+                      <span>Ai Agent And Advance LLM</span>
                     </li>
                   </ul>
                 </div>
                 <div className="flex flex-col p-6 pt-0">
-                  <Button>Contact Sales</Button>
+                  <Button>Get Started</Button>
                 </div>
               </div>
             </div>
