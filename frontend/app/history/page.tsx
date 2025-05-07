@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { ArrowUpDown, FileCode, Search, ArrowLeft, Download } from "lucide-react"
+import { ArrowUpDown, FileCode, Search, ArrowLeft, Download, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area"
 import ReactMarkdown from "react-markdown"
 import { ComponentPropsWithoutRef } from "react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface CodeReview {
   id: string
@@ -167,16 +173,241 @@ export default function ReviewHistory() {
     return "#ef4444"
   }
 
-  const downloadReview = (review: CodeReview) => {
-    const fileName = review.fileName 
-      ? `${review.fileName.split('/').pop()?.replace(/\.[^/.]+$/, '')}_review.md`
-      : 'code_review.md';
+  const downloadReview = (review: CodeReview, format: 'markdown' | 'pdf' | 'html') => {
+    const baseFileName = review.fileName 
+      ? `${review.fileName.split('/').pop()?.replace(/\.[^/.]+$/, '')}_review`
+      : 'code_review';
 
-    const blob = new Blob([review.review], { type: 'text/markdown' });
+    let content: string;
+    let mimeType: string;
+    let fileExtension: string;
+
+    switch (format) {
+      case 'markdown':
+        content = review.review;
+        mimeType = 'text/markdown';
+        fileExtension = 'md';
+        break;
+
+      case 'html':
+        // Convert markdown to HTML
+        const htmlContent = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8">
+              <title>Code Review - ${review.fileName || 'Pasted Code'}</title>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; }
+                pre { background-color: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+                code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+                h1, h2, h3 { color: #333; }
+                ul, ol { padding-left: 20px; }
+                .metadata { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+                .metadata p { margin: 5px 0; }
+              </style>
+            </head>
+            <body>
+              <div class="metadata">
+                <p><strong>File:</strong> ${review.fileName || 'Pasted Code'}</p>
+                <p><strong>Score:</strong> ${review.score}%</p>
+                <p><strong>Issues Found:</strong> ${review.issuesCount}</p>
+                <p><strong>Date:</strong> ${new Date(review.createdAt).toLocaleString()}</p>
+              </div>
+              ${review.review.split('\n').map(line => {
+                if (line.startsWith('#')) {
+                  return `<h${line.indexOf(' ')}>${line.substring(line.indexOf(' ')).trim()}</h${line.indexOf(' ')}>`;
+                }
+                if (line.startsWith('- ')) {
+                  return `<li>${line.substring(2)}</li>`;
+                }
+                if (line.startsWith('```')) {
+                  return `<pre><code>${line.substring(3)}</code></pre>`;
+                }
+                return `<p>${line}</p>`;
+              }).join('\n')}
+            </body>
+          </html>
+        `;
+        content = htmlContent;
+        mimeType = 'text/html';
+        fileExtension = 'html';
+        break;
+
+      case 'pdf':
+        // Create a temporary iframe for PDF generation
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+
+        // Create the PDF content with enhanced styling
+        const pdfContent = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8">
+              <title>Code Review - ${review.fileName || 'Pasted Code'}</title>
+              <style>
+                @media print {
+                  body { 
+                    font-family: Arial, sans-serif; 
+                    line-height: 1.6; 
+                    max-width: 800px; 
+                    margin: 0 auto; 
+                    padding: 20px;
+                    color: #000;
+                  }
+                  pre { 
+                    background-color: #f5f5f5; 
+                    padding: 15px; 
+                    border-radius: 5px; 
+                    overflow-x: auto;
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                    border: 1px solid #ddd;
+                    margin: 15px 0;
+                  }
+                  code { 
+                    background-color: #f5f5f5; 
+                    padding: 2px 4px; 
+                    border-radius: 3px;
+                    font-family: 'Courier New', monospace;
+                    font-size: 0.9em;
+                  }
+                  h1, h2, h3 { 
+                    color: #000;
+                    page-break-after: avoid;
+                    margin-top: 1.5em;
+                    margin-bottom: 0.5em;
+                  }
+                  h1 { font-size: 1.8em; }
+                  h2 { font-size: 1.5em; }
+                  h3 { font-size: 1.2em; }
+                  ul, ol { 
+                    padding-left: 20px;
+                    page-break-inside: avoid;
+                    margin: 1em 0;
+                  }
+                  li {
+                    margin: 0.5em 0;
+                  }
+                  .metadata { 
+                    background-color: #f8f9fa; 
+                    padding: 20px; 
+                    border-radius: 5px; 
+                    margin-bottom: 30px;
+                    page-break-after: avoid;
+                    border: 1px solid #ddd;
+                  }
+                  .metadata p { 
+                    margin: 8px 0;
+                    font-size: 0.95em;
+                  }
+                  .metadata strong {
+                    color: #333;
+                    min-width: 120px;
+                    display: inline-block;
+                  }
+                  .score-indicator {
+                    display: inline-block;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    margin-left: 10px;
+                  }
+                  .score-high { background-color: #d1fae5; color: #065f46; }
+                  .score-medium { background-color: #fef3c7; color: #92400e; }
+                  .score-low { background-color: #fee2e2; color: #991b1b; }
+                  p {
+                    margin: 1em 0;
+                  }
+                  @page {
+                    margin: 2cm;
+                    @bottom-center {
+                      content: "Page " counter(page) " of " counter(pages);
+                      font-size: 0.8em;
+                      color: #666;
+                    }
+                  }
+                  .header {
+                    text-align: center;
+                    margin-bottom: 2em;
+                    padding-bottom: 1em;
+                    border-bottom: 2px solid #eee;
+                  }
+                  .header h1 {
+                    margin: 0;
+                    color: #1a1a1a;
+                  }
+                  .header p {
+                    margin: 0.5em 0;
+                    color: #666;
+                  }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <h1>Code Review Report</h1>
+                <p>Generated on ${new Date().toLocaleString()}</p>
+              </div>
+              <div class="metadata">
+                <p><strong>File Name:</strong> ${review.fileName || 'Pasted Code'}</p>
+                <p><strong>Review Score:</strong> 
+                  <span class="score-indicator ${
+                    review.score >= 90 ? 'score-high' : 
+                    review.score >= 70 ? 'score-medium' : 
+                    'score-low'
+                  }">${review.score}%</span>
+                </p>
+                <p><strong>Issues Found:</strong> ${review.issuesCount}</p>
+                <p><strong>Review Date:</strong> ${new Date(review.createdAt).toLocaleString()}</p>
+                <p><strong>Status:</strong> ${review.status.toLowerCase().replace('_', ' ')}</p>
+              </div>
+              ${review.review.split('\n').map(line => {
+                if (line.startsWith('#')) {
+                  return `<h${line.indexOf(' ')}>${line.substring(line.indexOf(' ')).trim()}</h${line.indexOf(' ')}>`;
+                }
+                if (line.startsWith('- ')) {
+                  return `<li>${line.substring(2)}</li>`;
+                }
+                if (line.startsWith('```')) {
+                  return `<pre><code>${line.substring(3)}</code></pre>`;
+                }
+                return `<p>${line}</p>`;
+              }).join('\n')}
+            </body>
+          </html>
+        `;
+
+        // Write content to iframe
+        iframe.contentWindow?.document.open();
+        iframe.contentWindow?.document.write(pdfContent);
+        iframe.contentWindow?.document.close();
+
+        // Wait for content to load
+        iframe.onload = () => {
+          // Print the iframe content
+          iframe.contentWindow?.print();
+          
+          // Remove the iframe after printing
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+          }, 1000);
+        };
+
+        toast({
+          title: "PDF Generation",
+          description: "Please use your browser's print dialog to save as PDF.",
+        });
+        return; // Exit early as we're using the print dialog
+    }
+
+    const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = fileName;
+    link.download = `${baseFileName}.${fileExtension}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -184,7 +415,7 @@ export default function ReviewHistory() {
 
     toast({
       title: "Download Started",
-      description: "Your code review has been downloaded as a Markdown file.",
+      description: `Your code review has been downloaded as a ${format.toUpperCase()} file.`,
     });
   };
 
@@ -344,15 +575,30 @@ export default function ReviewHistory() {
                             <FileCode className="h-4 w-4" />
                             <span className="sr-only">View</span>
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => downloadReview(review)}
-                            title="Download Review"
-                          >
-                            <Download className="h-4 w-4" />
-                            <span className="sr-only">Download</span>
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                title="Download Review"
+                              >
+                                <Download className="h-4 w-4" />
+                                <ChevronDown className="h-4 w-4" />
+                                <span className="sr-only">Download</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => downloadReview(review, 'markdown')}>
+                                Download as Markdown
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => downloadReview(review, 'html')}>
+                                Download as HTML
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => downloadReview(review, 'pdf')}>
+                                Download as PDF
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>

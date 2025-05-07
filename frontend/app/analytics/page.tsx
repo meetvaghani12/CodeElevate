@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { CalendarIcon, Download, FileCode2, Info, RefreshCw, ArrowLeft } from "lucide-react"
+import { CalendarIcon, Download, FileCode2, Info, RefreshCw, ArrowLeft, ChevronDown } from "lucide-react"
 import { format } from "date-fns"
 import Link from "next/link"
 
@@ -32,6 +32,12 @@ import {
 import { useToast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE", "#00C49F", "#FFBB28", "#FF8042"]
 
@@ -115,6 +121,151 @@ export default function Analytics() {
     }
   }
 
+  const exportData = (format: 'json' | 'csv' | 'excel') => {
+    if (!analyticsData) {
+      toast({
+        title: "Error",
+        description: "No data available to export",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Create a formatted report
+    const report = {
+      generatedAt: new Date().toISOString(),
+      overview: analyticsData.overview,
+      monthlyData: analyticsData.monthlyData,
+      languageData: analyticsData.languageData,
+      issueTypeData: analyticsData.issueTypeData,
+      severityData: analyticsData.severityData
+    }
+
+    let blob: Blob
+    let filename: string
+    let mimeType: string
+
+    switch (format) {
+      case 'json':
+        const reportString = JSON.stringify(report, null, 2)
+        blob = new Blob([reportString], { type: 'application/json' })
+        filename = `analytics-report-${new Date().toISOString().split('T')[0]}.json`
+        mimeType = 'application/json'
+        break
+
+      case 'csv':
+        // Convert data to CSV format
+        const csvRows = []
+        // Add overview data
+        csvRows.push('Overview')
+        csvRows.push('Metric,Value')
+        Object.entries(report.overview).forEach(([key, value]) => {
+          csvRows.push(`${key},${value}`)
+        })
+        csvRows.push('') // Empty row for separation
+
+        // Add monthly data
+        csvRows.push('Monthly Data')
+        csvRows.push('Month,Reviews,Issues')
+        report.monthlyData.forEach(month => {
+          csvRows.push(`${month.name},${month.reviews},${month.issues}`)
+        })
+        csvRows.push('')
+
+        // Add language data
+        csvRows.push('Language Distribution')
+        csvRows.push('Language,Count')
+        report.languageData.forEach(lang => {
+          csvRows.push(`${lang.name},${lang.value}`)
+        })
+        csvRows.push('')
+
+        // Add issue type data
+        csvRows.push('Issue Types')
+        csvRows.push('Type,Count')
+        report.issueTypeData.forEach(type => {
+          csvRows.push(`${type.name},${type.value}`)
+        })
+        csvRows.push('')
+
+        // Add severity data
+        csvRows.push('Severity Distribution')
+        csvRows.push('Severity,Count')
+        report.severityData.forEach(severity => {
+          csvRows.push(`${severity.name},${severity.count}`)
+        })
+
+        blob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
+        filename = `analytics-report-${new Date().toISOString().split('T')[0]}.csv`
+        mimeType = 'text/csv'
+        break
+
+      case 'excel':
+        // For Excel, we'll create a CSV with BOM for Excel compatibility
+        const excelRows = []
+        // Add overview data
+        excelRows.push('Overview')
+        excelRows.push('Metric,Value')
+        Object.entries(report.overview).forEach(([key, value]) => {
+          excelRows.push(`${key},${value}`)
+        })
+        excelRows.push('')
+
+        // Add monthly data
+        excelRows.push('Monthly Data')
+        excelRows.push('Month,Reviews,Issues')
+        report.monthlyData.forEach(month => {
+          excelRows.push(`${month.name},${month.reviews},${month.issues}`)
+        })
+        excelRows.push('')
+
+        // Add language data
+        excelRows.push('Language Distribution')
+        excelRows.push('Language,Count')
+        report.languageData.forEach(lang => {
+          excelRows.push(`${lang.name},${lang.value}`)
+        })
+        excelRows.push('')
+
+        // Add issue type data
+        excelRows.push('Issue Types')
+        excelRows.push('Type,Count')
+        report.issueTypeData.forEach(type => {
+          excelRows.push(`${type.name},${type.value}`)
+        })
+        excelRows.push('')
+
+        // Add severity data
+        excelRows.push('Severity Distribution')
+        excelRows.push('Severity,Count')
+        report.severityData.forEach(severity => {
+          excelRows.push(`${severity.name},${severity.count}`)
+        })
+
+        // Add BOM for Excel compatibility
+        const BOM = '\uFEFF'
+        blob = new Blob([BOM + excelRows.join('\n')], { type: 'text/csv' })
+        filename = `analytics-report-${new Date().toISOString().split('T')[0]}.xlsx`
+        mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        break
+    }
+
+    // Create download link
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    toast({
+      title: "Success",
+      description: `Analytics data exported as ${format.toUpperCase()} successfully`,
+    })
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -167,10 +318,10 @@ export default function Analytics() {
             </Button>
           </Link>
         
-        <div>
+        {/* <div>
           <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
           <p className="text-muted-foreground">Detailed insights into your code review activity</p>
-        </div>
+        </div> */}
         <div className="flex flex-col gap-2 sm:flex-row">
           <Popover>
             <PopoverTrigger asChild>
@@ -204,10 +355,26 @@ export default function Analytics() {
               />
             </PopoverContent>
           </Popover>
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            Export Data
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Download className="h-4 w-4" />
+                Export Data
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => exportData('json')}>
+                Export as JSON
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportData('csv')}>
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportData('excel')}>
+                Export as Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
