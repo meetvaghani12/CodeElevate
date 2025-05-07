@@ -1,14 +1,118 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Code, FileCode, History, Settings, BarChart } from "lucide-react";
 import Link from "next/link";
+import { useToast } from "@/components/ui/use-toast";
+
+interface CodeReview {
+  id: string;
+  fileName: string | null;
+  code: string;
+  review: string;
+  score: number;
+  issuesCount: number;
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface DashboardStats {
+  totalReviews: number;
+  averageScore: number;
+  totalIssues: number;
+  resolvedIssues: number;
+  recentReviews: CodeReview[];
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalReviews: 0,
+    averageScore: 0,
+    totalIssues: 0,
+    resolvedIssues: 0,
+    recentReviews: []
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast({
+          title: "Authentication Error",
+          description: "Please log in to view your dashboard",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const response = await fetch('/api/code-reviews', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch dashboard data');
+      }
+
+      const reviews: CodeReview[] = await response.json();
+      
+      // Calculate statistics
+      const totalReviews = reviews.length;
+      const averageScore = reviews.length > 0 
+        ? Math.round(reviews.reduce((acc, review) => acc + review.score, 0) / reviews.length)
+        : 0;
+      const totalIssues = reviews.reduce((acc, review) => acc + review.issuesCount, 0);
+      const resolvedIssues = reviews.filter(review => review.status === 'COMPLETED')
+        .reduce((acc, review) => acc + review.issuesCount, 0);
+      
+      // Get recent reviews (last 3)
+      const recentReviews = reviews
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 3);
+
+      setStats({
+        totalReviews,
+        averageScore,
+        totalIssues,
+        resolvedIssues,
+        recentReviews
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load dashboard data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
+  };
 
   return (
     <ProtectedRoute>
@@ -25,8 +129,8 @@ export default function DashboardPage() {
               <FileCode className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">24</div>
-              <p className="text-xs text-muted-foreground">+12% from last month</p>
+              <div className="text-2xl font-bold">{isLoading ? '...' : stats.totalReviews}</div>
+              <p className="text-xs text-muted-foreground">All time reviews</p>
             </CardContent>
           </Card>
           <Card>
@@ -35,8 +139,8 @@ export default function DashboardPage() {
               <BarChart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">85%</div>
-              <p className="text-xs text-muted-foreground">+4% from last month</p>
+              <div className="text-2xl font-bold">{isLoading ? '...' : `${stats.averageScore}%`}</div>
+              <p className="text-xs text-muted-foreground">Overall code quality</p>
             </CardContent>
           </Card>
           <Card>
@@ -45,8 +149,8 @@ export default function DashboardPage() {
               <Code className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">142</div>
-              <p className="text-xs text-muted-foreground">-12% from last month</p>
+              <div className="text-2xl font-bold">{isLoading ? '...' : stats.totalIssues}</div>
+              <p className="text-xs text-muted-foreground">Total issues identified</p>
             </CardContent>
           </Card>
           <Card>
@@ -55,8 +159,8 @@ export default function DashboardPage() {
               <History className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">98</div>
-              <p className="text-xs text-muted-foreground">+18% from last month</p>
+              <div className="text-2xl font-bold">{isLoading ? '...' : stats.resolvedIssues}</div>
+              <p className="text-xs text-muted-foreground">Completed reviews</p>
             </CardContent>
           </Card>
         </div>
@@ -68,20 +172,44 @@ export default function DashboardPage() {
               <CardDescription>Your most recent code reviews and their status.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium leading-none">Authentication Service</p>
-                      <p className="text-sm text-muted-foreground">Completed 2 days ago</p>
+              {isLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center justify-between animate-pulse">
+                      <div className="space-y-2">
+                        <div className="h-4 bg-muted rounded w-48"></div>
+                        <div className="h-3 bg-muted rounded w-32"></div>
+                      </div>
+                      <div className="h-8 bg-muted rounded w-24"></div>
                     </div>
-                    <Button variant="ghost" size="sm" className="gap-2">
-                      View Details
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : stats.recentReviews.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  No reviews yet. Start your first code review!
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {stats.recentReviews.map((review) => (
+                    <div key={review.id} className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium leading-none">
+                          {review.fileName || 'Pasted Code'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Completed {formatDate(review.createdAt)}
+                        </p>
+                      </div>
+                      <Button variant="ghost" size="sm" className="gap-2" asChild>
+                        <Link href={`/history?id=${review.id}`}>
+                          View Details
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
