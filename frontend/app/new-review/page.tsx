@@ -14,7 +14,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 // @ts-ignore - ReactMarkdown doesn't have TypeScript declarations
-import ReactMarkdown from "react-markdown"
+import ReactMarkdown from "react-markdown" 
 import { ComponentPropsWithoutRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
@@ -41,6 +41,8 @@ export default function NewReviewPage() {
   const [files, setFiles] = useState<CodeFile[]>([])
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
   const [reviewResult, setReviewResult] = useState<string | null>(null)
+  const [reviewScore, setReviewScore] = useState<number | null>(null)
+  const [issuesCount, setIssuesCount] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [pastedCode, setPastedCode] = useState("")
   const [reviewModel, setReviewModel] = useState<ReviewModel>("llm")
@@ -327,6 +329,21 @@ export default function NewReviewPage() {
     }
   }
 
+  // Function to get score color
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "text-green-500";
+    if (score >= 60) return "text-yellow-500";
+    return "text-red-500";
+  };
+
+  // Function to get score label
+  const getScoreLabel = (score: number) => {
+    if (score >= 80) return "Excellent";
+    if (score >= 60) return "Good";
+    if (score >= 40) return "Fair";
+    return "Needs Improvement";
+  };
+
   // Function to call the review API
   const callReviewAPI = async (code: string, fileName?: string) => {
     try {
@@ -347,6 +364,8 @@ export default function NewReviewPage() {
         throw new Error(data.error || 'Failed to get code review');
       }
 
+      setReviewScore(data.score);
+      setIssuesCount(data.issuesCount);
       return data.review;
     } catch (error) {
       console.error('Error getting code review:', error);
@@ -497,7 +516,28 @@ export default function NewReviewPage() {
       <DialogContent className="max-w-4xl h-[80vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            <span>Code Review Results</span>
+            <div className="flex items-center gap-4">
+              <span>Code Review Results</span>
+              <div className="flex items-center gap-4">
+                {reviewScore !== null && (
+                  <div className="flex items-center gap-2">
+                    <span className={`text-2xl font-bold ${getScoreColor(reviewScore)}`}>
+                      {reviewScore}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      /100 - {getScoreLabel(reviewScore)}
+                    </span>
+                  </div>
+                )}
+                {issuesCount !== null && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-medium">
+                      {issuesCount} {issuesCount === 1 ? 'Issue' : 'Issues'} Found
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
             <div className="flex gap-2">
               <Button
                 variant="ghost"
@@ -545,7 +585,28 @@ export default function NewReviewPage() {
   const ReviewResult = () => (
     <div className="rounded-lg border p-4">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-medium">Review Results</h3>
+        <div className="flex items-center gap-4">
+          <h3 className="font-medium">Review Results</h3>
+          <div className="flex items-center gap-4">
+            {reviewScore !== null && (
+              <div className="flex items-center gap-2">
+                <span className={`text-2xl font-bold ${getScoreColor(reviewScore)}`}>
+                  {reviewScore}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  /100 - {getScoreLabel(reviewScore)}
+                </span>
+              </div>
+            )}
+            {/* {issuesCount !== null && (
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-medium">
+                  {issuesCount} {issuesCount === 1 ? 'Issue' : 'Issues'} Found
+                </span>
+              </div>
+            )} */}
+          </div>
+        </div>
         <div className="flex gap-2">
           {reviewResult && (
             <>
