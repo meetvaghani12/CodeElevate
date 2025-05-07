@@ -1,8 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { CalendarIcon, Download, FileCode2, Info, RefreshCw } from "lucide-react"
+import { CalendarIcon, Download, FileCode2, Info, RefreshCw, ArrowLeft } from "lucide-react"
 import { format } from "date-fns"
+import Link from "next/link"
+
 
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -159,6 +161,12 @@ export default function Analytics() {
   return (
     <div className="space-y-6 animate-in">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+      <Link href="/dashboard">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+        
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
           <p className="text-muted-foreground">Detailed insights into your code review activity</p>
@@ -206,7 +214,7 @@ export default function Analytics() {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="issues">Issues</TabsTrigger>
+          {/* <TabsTrigger value="issues">Issues</TabsTrigger> */}
           <TabsTrigger value="languages">Languages</TabsTrigger>
           <TabsTrigger value="trends">Trends</TabsTrigger>
         </TabsList>

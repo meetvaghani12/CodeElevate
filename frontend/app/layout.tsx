@@ -12,6 +12,9 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "AnveshaCode - Professional Code Reviews",
   description: "Get expert code reviews and improve your codebase with our AI-powered platform.",
+  icons: {
+    icon: "/meet.ico", 
+  },
 }
 
 export default function RootLayout({
