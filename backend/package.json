@@ -21,6 +21,7 @@
     "@types/nodemailer": "^6.4.17",
     "@types/redis": "^4.0.11",
     "@types/speakeasy": "^2.0.10",
+    "@types/stripe": "^8.0.417",
     "axios": "^1.8.4",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.7",
@@ -40,6 +41,7 @@
     "pg": "^8.13.1",
     "resend": "^4.1.2",
     "speakeasy": "^2.0.0",
+    "stripe": "^18.1.0",
     "supertest": "^7.0.0",
     "uuid": "^11.1.0",
     "zod": "^3.24.2"
