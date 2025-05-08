@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   try {
-    const { priceId, token } = await request.json();
-
+    const token = localStorage.getItem('token');
     if (!token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
@@ -17,24 +16,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const response = await fetch(`${backendUrl}/api/stripe/create-checkout-session`, {
-      method: 'POST',
+    const response = await fetch(`${backendUrl}/api/stripe/invoice`, {
       headers: {
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        priceId,
-        successUrl: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/invoice?success=true`,
-        cancelUrl: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/pricing`,
-      }),
     });
 
     if (!response.ok) {
       const error = await response.json();
       console.error('Backend error:', error);
       return NextResponse.json(
-        { error: error.message || 'Failed to create checkout session' },
+        { error: error.message || 'Failed to fetch invoice data' },
         { status: response.status }
       );
     }
@@ -42,9 +34,9 @@ export async function POST(request: Request) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error creating checkout session:', error);
+    console.error('Error fetching invoice:', error);
     return NextResponse.json(
-      { error: 'Failed to create checkout session' },
+      { error: 'Failed to fetch invoice data' },
       { status: 500 }
     );
   }

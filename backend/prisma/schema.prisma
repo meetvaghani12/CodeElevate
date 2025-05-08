@@ -23,7 +23,7 @@ model User {
   // image             String?
   twoFactorSecret   String?   @unique
   codeReviews       CodeReview[]
-  
+  subscription      Subscription?
   
   // Relations
   sessions          Session[]
@@ -76,9 +76,35 @@ model CodeReview {
   @@index([language])
 }
 
+model Subscription {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  stripeCustomerId  String?   @unique
+  stripePriceId     String?
+  stripeSubscriptionId String? @unique
+  status            SubscriptionStatus @default(INACTIVE)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
+}
+
 enum ReviewStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
   FAILED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
 }

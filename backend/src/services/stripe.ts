@@ -1,52 +1,41 @@
 import Stripe from 'stripe';
 
 if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY is not set in environment variables');
+  throw new Error('STRIPE_SECRET_KEY is not set');
 }
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2025-04-30.basil',
 });
 
-export const createCheckoutSession = async (priceId: string, customerId: string) => {
-  try {
-    console.log('Creating checkout session with:', { priceId, customerId });
-    
-    if (!priceId) {
-      throw new Error('Price ID is required');
-    }
+export async function createCheckoutSession(
+  priceId: string,
+  customerId: string,
+  successUrl?: string,
+  cancelUrl?: string
+) {
+  const session = await stripe.checkout.sessions.create({
+    customer: customerId,
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+    mode: 'subscription',
+    success_url: successUrl || `${process.env.FRONTEND_URL}/invoice?success=true`,
+    cancel_url: cancelUrl || `${process.env.FRONTEND_URL}/pricing`,
+    allow_promotion_codes: true,
+  });
 
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      mode: 'subscription',
-      success_url: `${process.env.FRONTEND_URL}/dashboard?success=true`,
-      cancel_url: `${process.env.FRONTEND_URL}/pricing?canceled=true`,
-    });
+  return session;
+}
 
-    return session;
-  } catch (error) {
-    console.error('Error creating checkout session:', error);
-    throw error;
-  }
-};
+export async function createPortalSession(customerId: string) {
+  const session = await stripe.billingPortal.sessions.create({
+    customer: customerId,
+    return_url: `${process.env.FRONTEND_URL}/dashboard`,
+  });
 
-export const createPortalSession = async (customerId: string) => {
-  try {
-    const session = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: `${process.env.FRONTEND_URL}/dashboard`,
-    });
-
-    return session;
-  } catch (error) {
-    console.error('Error creating portal session:', error);
-    throw error;
-  }
-}; 
+  return session;
+} 
