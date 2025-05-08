@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
 import { loadStripe } from "@stripe/stripe-js"
-import { ArrowRight, CheckCircle } from "lucide-react"
+import { ArrowRight, CheckCircle,ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -118,7 +118,13 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container py-12 md:py-24">
+      <div className="container py-10 md:py-18">
+      <Link href="/">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+        
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold tracking-tight mb-4">
             Choose Your Plan
