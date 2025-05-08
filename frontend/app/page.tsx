@@ -61,7 +61,7 @@ export default function Home() {
             <Link href="#features" className="text-sm font-medium transition-colors hover:text-primary">
               Features
             </Link>
-            <Link href="#pricing" className="text-sm font-medium transition-colors hover:text-primary">
+            <Link href="/pricing" className="text-sm font-medium transition-colors hover:text-primary">
               Pricing
             </Link>
             <Link href="/about" className="text-sm font-medium transition-colors hover:text-primary">
@@ -248,9 +248,6 @@ export default function Home() {
                   Choose the plan that's right for you and your team.
                 </p>
               </div>
-              <div>
-                
-                </div>
               <div className="flex items-center justify-center space-x-4 mb-8">
                 <button
                   onClick={() => toggleBillingCycle("monthly")}
@@ -272,7 +269,7 @@ export default function Home() {
                 >
                   Yearly
                   <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
-                    Save 20%
+                    Save 15%
                   </span>
                 </button>
               </div>
@@ -282,16 +279,16 @@ export default function Home() {
               <div>
                 
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl w-full">
-                {/* Free Plan */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
+                {/* Basic Plan */}
                 <div className="flex flex-col p-6 rounded-lg border bg-card">
                   <div className="space-y-2">
-                    <h3 className="text-2xl font-bold">Free</h3>
-                    <p className="text-muted-foreground">Perfect for getting started</p>
+                    <h3 className="text-2xl font-bold">Basic</h3>
+                    <p className="text-muted-foreground">Perfect for individual developers</p>
                   </div>
                   <div className="mt-4">
-                    <span className="text-4xl font-bold">₹0</span>
-                    <span className="text-muted-foreground">/month</span>
+                    <span className="text-4xl font-bold">₹{billingCycle === "monthly" ? "99" : "999"}</span>
+                    <span className="text-muted-foreground">/{billingCycle === "monthly" ? "month" : "year"}</span>
                   </div>
                   <ul className="mt-6 space-y-4">
                     <li className="flex items-center">
@@ -307,12 +304,14 @@ export default function Home() {
                       <span>Basic LLM Model</span>
                     </li>
                   </ul>
-                  <Button className="mt-8" variant="outline">
-                    Current Plan
-                  </Button>
+                  <Link href="/pricing">
+                    <Button className="mt-8 w-full">
+                      Get Started
+                    </Button>
+                  </Link>
                 </div>
 
-                {/* Professional Plan */}
+                {/* Advanced Plan */}
                 <div className="flex flex-col p-6 rounded-lg border bg-card relative">
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                     <span className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
@@ -320,14 +319,12 @@ export default function Home() {
                     </span>
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-2xl font-bold">Professional</h3>
-                    <p className="text-muted-foreground">For serious developers</p>
+                    <h3 className="text-2xl font-bold">Advanced</h3>
+                    <p className="text-muted-foreground">Ideal for growing teams</p>
                   </div>
                   <div className="mt-4">
-                    <span className="text-4xl font-bold">
-                    ₹{billingCycle === "monthly" ? "199" : "1999"}
-                    </span>
-                    <span className="text-muted-foreground">/month</span>
+                    <span className="text-4xl font-bold">₹{billingCycle === "monthly" ? "199" : "1999"}</span>
+                    <span className="text-muted-foreground">/{billingCycle === "monthly" ? "month" : "year"}</span>
                   </div>
                   <ul className="mt-6 space-y-4">
                     <li className="flex items-center">
@@ -342,10 +339,20 @@ export default function Home() {
                       <CheckCircle className="h-5 w-5 text-primary mr-2" />
                       <span>Advanced LLM Models</span>
                     </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-primary mr-2" />
+                      <span>Security vulnerability scanning</span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-primary mr-2" />
+                      <span>Code quality metrics</span>
+                    </li>
                   </ul>
-                  <Button className="mt-8">
-                    Upgrade to Pro
-                  </Button>
+                  <Link href="/pricing">
+                    <Button className="mt-8 w-full">
+                      Get Started
+                    </Button>
+                  </Link>
                 </div>
 
                 {/* Enterprise Plan */}
@@ -355,10 +362,8 @@ export default function Home() {
                     <p className="text-muted-foreground">For large organizations</p>
                   </div>
                   <div className="mt-4">
-                    <span className="text-4xl font-bold">
-                    ₹{billingCycle === "monthly" ? "399" : "3999"}
-                    </span>
-                    <span className="text-muted-foreground">/month</span>
+                    <span className="text-4xl font-bold">₹{billingCycle === "monthly" ? "499" : "4999"}</span>
+                    <span className="text-muted-foreground">/{billingCycle === "monthly" ? "month" : "year"}</span>
                   </div>
                   <ul className="mt-6 space-y-4">
                     <li className="flex items-center">
@@ -373,10 +378,24 @@ export default function Home() {
                       <CheckCircle className="h-5 w-5 text-primary mr-2" />
                       <span>AI Agent & Advanced LLM</span>
                     </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-primary mr-2" />
+                      <span>Custom integrations</span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-primary mr-2" />
+                      <span>Advanced security features</span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-primary mr-2" />
+                      <span>Custom reporting</span>
+                    </li>
                   </ul>
-                  <Button className="mt-8">
-                    Upgrade to Pro
-                  </Button>
+                  <Link href="/pricing">
+                    <Button className="mt-8 w-full">
+                      Get Started
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>

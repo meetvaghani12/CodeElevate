@@ -152,6 +152,13 @@ export default function PricingPage() {
               key={plan.name}
               className="border rounded-lg p-8 flex flex-col relative"
             >
+              {plan.name === "Advanced" && (
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                  <span className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
+                    Best Choice
+                  </span>
+                </div>
+              )}
               <div className="mb-6">
                 <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                 <p className="text-muted-foreground">{plan.description}</p>
