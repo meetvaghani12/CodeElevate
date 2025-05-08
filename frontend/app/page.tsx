@@ -248,172 +248,135 @@ export default function Home() {
                   Choose the plan that's right for you and your team.
                 </p>
               </div>
-            </div>
-            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 lg:grid-cols-3">
-              <div className="flex flex-col rounded-lg border shadow-sm">
-                <div className="p-6">
-                  <h3 className="text-2xl font-bold">Starter</h3>
-                  <div className="mt-4 text-center">
-                    <div className="inline-flex rounded-md" role="group">
-                      <Button 
-                        variant={billingCycle === "monthly" ? "default" : "outline"} 
-                        size="sm" 
-                        className="rounded-r-none"
-                        onClick={() => toggleBillingCycle("monthly")}
-                      >
-                        Monthly
-                      </Button>
-                      <Button 
-                        variant={billingCycle === "yearly" ? "default" : "outline"} 
-                        size="sm" 
-                        className="rounded-l-none"
-                        onClick={() => toggleBillingCycle("yearly")}
-                      >
-                        Yearly
-                      </Button>
-                    </div>
-                    <div className="mt-2">
-                      {/* {billingCycle === "monthly" ? ( */}
-                        <>
-                          <span className="text-4xl font-bold">Free</span>
-                          
-                        </>
-                      {/* ) : ( */}
-                        <>
-                          {/* <span className="text-4xl font-bold">₹10,189</span>
-                          <span className="text-muted-foreground">/year</span>
-                          <div className="text-sm text-primary">Save 15%</div> */}
-                        </>
-                      {/* )} */}
-                    </div>
+              <div>
+                
+                </div>
+              <div className="flex items-center justify-center space-x-4 mb-8">
+                <button
+                  onClick={() => toggleBillingCycle("monthly")}
+                  className={`px-4 py-2 rounded-lg ${
+                    billingCycle === "monthly"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => toggleBillingCycle("yearly")}
+                  className={`px-4 py-2 rounded-lg ${
+                    billingCycle === "yearly"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
+                  }`}
+                >
+                  Yearly
+                  <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                    Save 20%
+                  </span>
+                </button>
+              </div>
+              <div>
+
+              </div>
+              <div>
+                
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl w-full">
+                {/* Free Plan */}
+                <div className="flex flex-col p-6 rounded-lg border bg-card">
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-bold">Free</h3>
+                    <p className="text-muted-foreground">Perfect for getting started</p>
                   </div>
-                  <ul className="mt-6 space-y-3">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary" />
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold">₹0</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                  <ul className="mt-6 space-y-4">
+                    <li className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-primary mr-2" />
                       <span>Up to 5 Projects</span>
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary" />
+                    <li className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-primary mr-2" />
                       <span>Up to 30 File Reviews</span>
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary" />
+                    <li className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-primary mr-2" />
                       <span>Basic LLM Model</span>
                     </li>
                   </ul>
+                  <Button className="mt-8" variant="outline">
+                    Current Plan
+                  </Button>
                 </div>
-              
-              </div>
-              <div className="flex flex-col rounded-lg border shadow-sm bg-primary/5 border-primary/20">
-                <div className="p-6">
-                  <h3 className="text-2xl font-bold">Professional</h3>
-                  <div className="mt-4 text-center">
-                    <div className="inline-flex rounded-md" role="group">
-                      <Button 
-                        variant={billingCycle === "monthly" ? "default" : "outline"} 
-                        size="sm" 
-                        className="rounded-r-none"
-                        onClick={() => toggleBillingCycle("monthly")}
-                      >
-                        Monthly
-                      </Button>
-                      <Button 
-                        variant={billingCycle === "yearly" ? "default" : "outline"} 
-                        size="sm" 
-                        className="rounded-l-none"
-                        onClick={() => toggleBillingCycle("yearly")}
-                      >
-                        Yearly
-                      </Button>
-                    </div>
-                    <div className="mt-2">
-                      {billingCycle === "monthly" ? (
-                        <>
-                          <span className="text-4xl font-bold">₹199</span>
-                          <span className="text-muted-foreground">/month</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-4xl font-bold">₹1999</span>
-                          <span className="text-muted-foreground">/year</span>
-                          <div className="text-sm text-primary">Save 16%</div>
-                        </>
-                      )}
-                    </div>
+
+                {/* Professional Plan */}
+                <div className="flex flex-col p-6 rounded-lg border bg-card relative">
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
+                      Best Choice
+                    </span>
                   </div>
-                  <ul className="mt-6 space-y-3">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary" />
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-bold">Professional</h3>
+                    <p className="text-muted-foreground">For serious developers</p>
+                  </div>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold">
+                    ₹{billingCycle === "monthly" ? "199" : "1999"}
+                    </span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                  <ul className="mt-6 space-y-4">
+                    <li className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-primary mr-2" />
                       <span>Up to 25 Projects Per Month</span>
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary" />
+                    <li className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-primary mr-2" />
                       <span>200 File Reviews Per Month</span>
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary" />
+                    <li className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-primary mr-2" />
                       <span>Advanced LLM Models</span>
                     </li>
                   </ul>
+                  <Button className="mt-8">
+                    Upgrade to Pro
+                  </Button>
                 </div>
-                <div className="flex flex-col p-6 pt-0">
-                  <Button>Get Started</Button>
-                </div>
-              </div>
-              <div className="flex flex-col rounded-lg border shadow-sm">
-                <div className="p-6">
-                  <h3 className="text-2xl font-bold">Enterprise</h3>
-                  <div className="mt-4 text-center">
-                    <div className="inline-flex rounded-md" role="group">
-                      <Button 
-                        variant={billingCycle === "monthly" ? "default" : "outline"} 
-                        size="sm" 
-                        className="rounded-r-none"
-                        onClick={() => toggleBillingCycle("monthly")}
-                      >
-                        Monthly
-                      </Button>
-                      <Button 
-                        variant={billingCycle === "yearly" ? "default" : "outline"} 
-                        size="sm" 
-                        className="rounded-l-none"
-                        onClick={() => toggleBillingCycle("yearly")}
-                      >
-                        Yearly
-                      </Button>
-                    </div>
-                    <div className="mt-2">
-                      {billingCycle === "monthly" ? (
-                        <>
-                          <span className="text-4xl font-bold">₹399</span>
-                          <span className="text-muted-foreground">/month</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-4xl font-bold">₹3999</span>
-                          <span className="text-muted-foreground">/year</span>
-                          <div className="text-sm text-primary">Save 17%</div>
-                        </>
-                      )}
-                    </div>
+
+                {/* Enterprise Plan */}
+                <div className="flex flex-col p-6 rounded-lg border bg-card">
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-bold">Enterprise</h3>
+                    <p className="text-muted-foreground">For large organizations</p>
                   </div>
-                  <ul className="mt-6 space-y-3">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary" />
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold">
+                    ₹{billingCycle === "monthly" ? "399" : "3999"}
+                    </span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                  <ul className="mt-6 space-y-4">
+                    <li className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-primary mr-2" />
                       <span>Unlimited Projects</span>
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary" />
+                    <li className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-primary mr-2" />
                       <span>Unlimited File Reviews</span>
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>Ai Agent And Advance LLM</span>
+                    <li className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-primary mr-2" />
+                      <span>AI Agent & Advanced LLM</span>
                     </li>
                   </ul>
-                </div>
-                <div className="flex flex-col p-6 pt-0">
-                  <Button>Get Started</Button>
+                  <Button className="mt-8">
+                    Upgrade to Pro
+                  </Button>
                 </div>
               </div>
             </div>
