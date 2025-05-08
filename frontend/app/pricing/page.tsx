@@ -9,6 +9,7 @@ import Link from "next/link"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
+
 const plans = [
   {
     name: "Basic",
@@ -46,8 +47,8 @@ const plans = [
       "Code quality metrics",
     ],
     priceId: {
-      monthly: process.env.NEXT_PUBLIC_STRIPE_ADVANCED_MONTHLY_PRICE_ID,
-      yearly: process.env.NEXT_PUBLIC_STRIPE_ADVANCED_YEARLY_PRICE_ID,
+      monthly: process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID,
+      yearly: process.env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PRICE_ID,
     },
   },
   {
@@ -96,6 +97,8 @@ export default function PricingPage() {
         return;
       }
 
+      console.log('Subscribing with price ID:', priceId);
+
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
@@ -107,9 +110,13 @@ export default function PricingPage() {
         }),
       });
 
-      const { url } = await response.json();
-      if (url) {
-        window.location.href = url;
+      const data = await response.json();
+      console.log('Checkout session response:', data);
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error('No URL in response:', data);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -178,7 +185,11 @@ export default function PricingPage() {
               <Button
                 className="w-full"
                 size="lg"
-                onClick={() => handleSubscribe(plan.priceId[billingCycle]!)}
+                onClick={() => {
+                  const priceId = plan.priceId[billingCycle];
+                  console.log(`Subscribing to ${plan.name} ${billingCycle} plan:`, priceId);
+                  handleSubscribe(priceId!);
+                }}
               >
                 {user ? (
                   <>
