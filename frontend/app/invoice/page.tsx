@@ -8,6 +8,8 @@ import { useAuth } from "@/lib/auth-context"
 import { ArrowLeft, Download, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { QRCodeSVG } from "qrcode.react"
+import { PDFDownloadLink } from '@react-pdf/renderer'
+import { InvoicePDF } from "./InvoicePDF"
 
 interface InvoiceData {
   subscriptionId: string;
@@ -18,6 +20,10 @@ interface InvoiceData {
   startDate: string;
   endDate: string;
   features: string[];
+}
+
+interface PDFDownloadLinkProps {
+  loading: boolean;
 }
 
 export default function InvoicePage() {
@@ -66,8 +72,21 @@ export default function InvoicePage() {
   }, [searchParams]);
 
   const handleDownloadInvoice = () => {
-    // Implement PDF generation and download
-    console.log('Downloading invoice...');
+    if (!invoiceData || !user) return;
+    
+    return (
+      <PDFDownloadLink
+        document={<InvoicePDF invoiceData={invoiceData} userData={user} />}
+        fileName={`invoice-${invoiceData.subscriptionId}.pdf`}
+      >
+        {({ loading }: PDFDownloadLinkProps) => (
+          <Button disabled={loading}>
+            <Download className="mr-2 h-4 w-4" />
+            {loading ? 'Preparing...' : 'Download Invoice'}
+          </Button>
+        )}
+      </PDFDownloadLink>
+    );
   };
 
   if (loading) {
@@ -117,10 +136,7 @@ export default function InvoicePage() {
               Back to Dashboard
             </Button>
           </Link>
-          <Button onClick={handleDownloadInvoice}>
-            <Download className="mr-2 h-4 w-4" />
-            Download Invoice
-          </Button>
+          {handleDownloadInvoice()}
         </div>
 
         <Card className="p-8">
@@ -162,7 +178,7 @@ export default function InvoicePage() {
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold">${invoiceData.amount}</p>
+                <p className="text-2xl font-bold">₹{invoiceData.amount}</p>
                 <p className="text-muted-foreground">
                   per {invoiceData.billingCycle === 'monthly' ? 'month' : 'year'}
                 </p>

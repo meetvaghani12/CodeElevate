@@ -166,7 +166,7 @@ export default function PricingPage() {
 
               <div className="mb-6">
                 <div className="text-4xl font-bold">
-                  ${plan.price[billingCycle]}
+                ₹{plan.price[billingCycle]}
                   <span className="text-base font-normal text-muted-foreground">
                     /{billingCycle === 'monthly' ? 'month' : 'year'}
                   </span>
@@ -187,7 +187,7 @@ export default function PricingPage() {
                 size="lg"
                 onClick={() => {
                   const priceId = plan.priceId[billingCycle];
-                  console.log(`Subscribing to ${plan.name} ${billingCycle} plan:`, priceId);
+                  console.log(`Subscribing to ${plan.name} ₹{billingCycle} plan:`, priceId);
                   handleSubscribe(priceId!);
                 }}
               >

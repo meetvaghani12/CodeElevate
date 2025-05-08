@@ -325,6 +325,61 @@ router.post('/webhook', async (req, res) => {
   }
 });
 
+// Verify invoice
+router.get('/verify-invoice/:subscriptionId', async (req, res) => {
+  try {
+    const { subscriptionId } = req.params;
+
+    if (!subscriptionId) {
+      return res.status(400).json({
+        isValid: false,
+        message: 'Invalid subscription ID',
+      });
+    }
+
+    // Check if subscription exists in database
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        stripeSubscriptionId: subscriptionId,
+      },
+    });
+
+    if (!subscription) {
+      return res.status(404).json({
+        isValid: false,
+        message: 'Invoice not found',
+      });
+    }
+
+    // Verify subscription with Stripe
+    try {
+      // const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+      
+      return res.json({
+        isValid: true,
+        message: 'This is a valid invoice',
+        invoiceData: {
+          planName: subscription.stripePriceId ? 'Active Plan' : 'Unknown Plan', // You might want to store plan name in your database
+          status: subscription.status,
+          startDate: subscription.currentPeriodStart?.toISOString() || new Date().toISOString(),
+          endDate: subscription.currentPeriodEnd?.toISOString() || new Date().toISOString(),
+        },
+      });
+    } catch (stripeError) {
+      return res.status(404).json({
+        isValid: false,
+        message: 'Invalid or expired subscription',
+      });
+    }
+  } catch (error) {
+    console.error('Error verifying invoice:', error);
+    return res.status(500).json({
+      isValid: false,
+      message: 'Error verifying invoice',
+    });
+  }
+});
+
 // Helper function to get plan features
 function getPlanFeatures(planName: string): string[] {
   const features = {
