@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { createCheckoutSession, createPortalSession, stripe } from '../../services/stripe';
 import { authenticate } from '../../auth/middleware/auth.middleware';
 import { Request } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, SubscriptionPlan } from '@prisma/client';
 import { Stripe } from 'stripe';
 
 const prisma = new PrismaClient();
@@ -20,6 +20,29 @@ interface StripeSubscription extends Stripe.Subscription {
 }
 
 const router = Router();
+
+// Helper function to map price ID to plan
+function getPlanFromPriceId(priceId: string): SubscriptionPlan {
+  // Basic Plan
+  if (priceId === 'price_1RMRn3SAkgq2mdwxabGYI0No' || // Basic Monthly
+      priceId === 'price_1RMRnTSAkgq2mdwxMOZharFy') { // Basic Yearly
+    return SubscriptionPlan.BASIC;
+  }
+  
+  // Advanced/Pro Plan
+  if (priceId === 'price_1RMRqxSAkgq2mdwxvkqKqSxw' || // Pro Monthly
+      priceId === 'price_1RMRqxSAkgq2mdwxQMGyRTub') { // Pro Yearly
+    return SubscriptionPlan.ADVANCED;
+  }
+  
+  // Enterprise Plan
+  if (priceId === 'price_1RMRtWSAkgq2mdwxNxnbUbZ5' || // Enterprise Monthly
+      priceId === 'price_1RMRtWSAkgq2mdwxGL1xXAzv') { // Enterprise Yearly
+    return SubscriptionPlan.ENTERPRISE;
+  }
+
+  throw new Error('Invalid price ID');
+}
 
 // Create a checkout session
 router.post('/create-checkout-session', authenticate, async (req: AuthenticatedRequest, res) => {
@@ -47,6 +70,9 @@ router.post('/create-checkout-session', authenticate, async (req: AuthenticatedR
 
     console.log('Created/retrieved customer:', customer.id);
 
+    // Get the plan from price ID
+    const plan = getPlanFromPriceId(priceId);
+
     // Store or update the customer ID in the database
     await prisma.subscription.upsert({
       where: {
@@ -55,11 +81,13 @@ router.post('/create-checkout-session', authenticate, async (req: AuthenticatedR
       update: {
         stripeCustomerId: customer.id,
         stripePriceId: priceId,
+        plan: plan,
       },
       create: {
         userId: userId,
         stripeCustomerId: customer.id,
         stripePriceId: priceId,
+        plan: plan,
         status: 'INACTIVE',
       },
     });
@@ -111,7 +139,8 @@ router.get('/invoice', authenticate, async (req: AuthenticatedRequest, res) => {
       // If no active subscription in Stripe, return database subscription info
       return res.json({
         subscriptionId: dbSubscription.stripeSubscriptionId,
-        planName: 'Unknown', // You might want to store this in your database
+        plan: dbSubscription.plan || 'Unknown',
+        planName: dbSubscription.plan || 'Unknown',
         amount: 0,
         billingCycle: 'monthly',
         status: dbSubscription.status,
@@ -125,8 +154,8 @@ router.get('/invoice', authenticate, async (req: AuthenticatedRequest, res) => {
     const price = await stripe.prices.retrieve(subscription.items.data[0].price.id);
     const product = await stripe.products.retrieve(price.product as string);
 
-    // Get plan features based on product name
-    const features = getPlanFeatures(product.name);
+    // Get plan features based on subscription plan
+    const features = getPlanFeatures(dbSubscription.plan || 'Unknown');
 
     try {
       // Log the raw timestamps for debugging
@@ -150,6 +179,7 @@ router.get('/invoice', authenticate, async (req: AuthenticatedRequest, res) => {
 
         return res.json({
           subscriptionId: subscription.id,
+          plan: dbSubscription.plan,
           planName: product.name,
           amount: price.unit_amount ? price.unit_amount / 100 : 0,
           billingCycle: price.recurring?.interval || 'monthly',
@@ -182,6 +212,7 @@ router.get('/invoice', authenticate, async (req: AuthenticatedRequest, res) => {
 
       const invoiceData = {
         subscriptionId: subscription.id,
+        plan: dbSubscription.plan,
         planName: product.name,
         amount: price.unit_amount ? price.unit_amount / 100 : 0,
         billingCycle: price.recurring?.interval || 'monthly',
@@ -251,52 +282,86 @@ router.post('/webhook', async (req, res) => {
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object;
+        const session = event.data.object as Stripe.Checkout.Session;
         const customerId = session.customer as string;
         const subscriptionId = session.subscription as string;
+        const priceId = session.metadata?.priceId;
 
-        // Get customer to find userId
-        const customer = await stripe.customers.retrieve(customerId);
-        if ('deleted' in customer) {
+        if (!customerId || !subscriptionId || !priceId) {
+          throw new Error('Missing required session data');
+        }
+
+        const customerResponse = await stripe.customers.retrieve(customerId);
+        if ('deleted' in customerResponse) {
           throw new Error('Customer has been deleted');
         }
-        const userId = customer.metadata.userId;
+        const customer = customerResponse as Stripe.Customer;
+        const userId = customer.metadata?.userId;
 
         if (!userId) {
           throw new Error('No userId found in customer metadata');
         }
 
-        // Get subscription details from Stripe
-        const subscription = (await stripe.subscriptions.retrieve(subscriptionId)) as unknown as StripeSubscription;
-        const startDate = new Date(subscription.current_period_start * 1000);
-        const endDate = new Date(subscription.current_period_end * 1000);
+        const plan = getPlanFromPriceId(priceId);
 
-        // Update subscription in database
         await prisma.subscription.update({
-          where: {
-            userId: userId,
-          },
+          where: { userId },
           data: {
             stripeSubscriptionId: subscriptionId,
             status: 'ACTIVE',
-            currentPeriodStart: startDate,
-            currentPeriodEnd: endDate,
+            plan: plan,
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           },
         });
-
         break;
       }
-      case 'customer.subscription.updated':
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription & {
+          current_period_start: number;
+          current_period_end: number;
+        };
+        const customerId = subscription.customer as string;
+        const priceId = subscription.items.data[0].price.id;
+
+        const customerResponse = await stripe.customers.retrieve(customerId);
+        if ('deleted' in customerResponse) {
+          throw new Error('Customer has been deleted');
+        }
+        const customer = customerResponse as Stripe.Customer;
+        const userId = customer.metadata?.userId;
+
+        if (!userId) {
+          throw new Error('No userId found in customer metadata');
+        }
+
+        const plan = getPlanFromPriceId(priceId);
+
+        await prisma.subscription.update({
+          where: { userId },
+          data: {
+            status: subscription.status.toUpperCase() as any,
+            plan: plan,
+            currentPeriodStart: new Date(subscription.current_period_start * 1000),
+            currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+          },
+        });
+        break;
+      }
       case 'customer.subscription.deleted': {
-        const subscription = event.data.object as StripeSubscription;
+        const subscription = event.data.object as Stripe.Subscription & {
+          current_period_start: number;
+          current_period_end: number;
+        };
         const customerId = subscription.customer as string;
 
         // Get customer to find userId
-        const customer = await stripe.customers.retrieve(customerId);
-        if ('deleted' in customer) {
+        const customerResponse = await stripe.customers.retrieve(customerId);
+        if ('deleted' in customerResponse) {
           throw new Error('Customer has been deleted');
         }
-        const userId = customer.metadata.userId;
+        const customer = customerResponse as Stripe.Customer;
+        const userId = customer.metadata?.userId;
 
         if (!userId) {
           throw new Error('No userId found in customer metadata');
@@ -381,38 +446,32 @@ router.get('/verify-invoice/:subscriptionId', async (req, res) => {
 });
 
 // Helper function to get plan features
-function getPlanFeatures(planName: string): string[] {
-  const features = {
-    'Basic': [
-      '5 code reviews per month',
-      'Basic code analysis',
-      'Email support',
-      'Basic security checks',
-      'Code style suggestions',
-    ],
-    'Advanced': [
-      '20 code reviews per month',
-      'Advanced code analysis',
-      'Priority support',
-      'Team collaboration',
-      'Performance optimization',
-      'Security vulnerability scanning',
-      'Code quality metrics',
-    ],
-    'Enterprise': [
-      'Unlimited code reviews',
-      'Enterprise-grade analysis',
-      '24/7 priority support',
-      'Custom integrations',
-      'Dedicated account manager',
-      'Advanced security features',
-      'Custom reporting',
-      'API access',
-      'SLA guarantees',
-    ],
-  };
-
-  return features[planName as keyof typeof features] || [];
+function getPlanFeatures(plan: string): string[] {
+  switch (plan) {
+    case 'BASIC':
+      return [
+        'Basic code review',
+        'Up to 5 reviews per month',
+        'Standard response time',
+      ];
+    case 'ADVANCED':
+      return [
+        'Advanced code review',
+        'Up to 20 reviews per month',
+        'Priority response time',
+        'Detailed analysis',
+      ];
+    case 'ENTERPRISE':
+      return [
+        'Enterprise code review',
+        'Unlimited reviews',
+        '24/7 priority support',
+        'Custom integration options',
+        'Dedicated account manager',
+      ];
+    default:
+      return [];
+  }
 }
 
 export default router; 

@@ -76,6 +76,12 @@ model CodeReview {
   @@index([language])
 }
 
+enum SubscriptionPlan {
+  BASIC
+  ADVANCED
+  ENTERPRISE
+}
+
 model Subscription {
   id                String    @id @default(cuid())
   userId            String    @unique
@@ -83,6 +89,7 @@ model Subscription {
   stripePriceId     String?
   stripeSubscriptionId String? @unique
   status            SubscriptionStatus @default(INACTIVE)
+  plan              SubscriptionPlan?
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
   createdAt         DateTime  @default(now())
