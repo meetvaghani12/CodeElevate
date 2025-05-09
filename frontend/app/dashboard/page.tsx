@@ -126,10 +126,10 @@ export default function DashboardPage() {
             <div className="mt-4">
               <Button
                 variant="default"
-                onClick={() => router.push('/invoice')}
+                onClick={() => router.push('/invoice/invoicePDF')}
                 className="gap-2"
               >
-                <span >Current Plan:</span>
+                <span>Current Plan:</span>
                 <span>{user.subscription.plan}</span>
               </Button>
             </div>
