@@ -44,6 +44,49 @@ function getPlanFromPriceId(priceId: string): SubscriptionPlan {
   throw new Error('Invalid price ID');
 }
 
+// Helper function to get plan price from the plan name and billing cycle
+function getPlanPrice(planName: string, billingCycle: string): number {
+  const planPrices: Record<string, Record<string, number>> = {
+    'Basic': {
+      'monthly': 99,
+      'yearly': 999
+    },
+    'Advanced': {
+      'monthly': 199,
+      'yearly': 1999
+    },
+    'Enterprise': {
+      'monthly': 499,
+      'yearly': 4999
+    }
+  };
+  
+  // Normalize plan name for more reliable matching - convert to lowercase for case-insensitive comparison
+  const planNameLower = planName?.toLowerCase() || '';
+  
+  let normalizedPlanName = 'Basic'; // Default to Basic
+  
+  if (planNameLower.includes('basic')) {
+    normalizedPlanName = 'Basic';
+  } else if (planNameLower.includes('advanced') || planNameLower.includes('pro')) {
+    normalizedPlanName = 'Advanced';
+  } else if (planNameLower.includes('enterprise') || planNameLower === 'enterprise') {
+    normalizedPlanName = 'Enterprise';
+  } else if (planName === 'ENTERPRISE') {
+    normalizedPlanName = 'Enterprise';
+  }
+  
+  console.log('Plan name normalization:', { 
+    original: planName, 
+    normalized: normalizedPlanName,
+    billing: billingCycle
+  });
+  
+  const cycle = billingCycle === 'yearly' ? 'yearly' : 'monthly';
+  
+  return planPrices[normalizedPlanName]?.[cycle] || 0;
+}
+
 // Create a checkout session
 router.post('/create-checkout-session', authenticate, async (req: AuthenticatedRequest, res) => {
   try {
@@ -118,6 +161,12 @@ router.get('/invoice', authenticate, async (req: AuthenticatedRequest, res) => {
       return res.status(404).json({ error: 'No subscription found in database' });
     }
 
+    console.log('Found subscription in DB:', {
+      plan: dbSubscription.plan,
+      status: dbSubscription.status,
+      subscriptionId: dbSubscription.stripeSubscriptionId
+    });
+
     // Get customer from Stripe
     const customers = await stripe.customers.list({
       limit: 1,
@@ -125,7 +174,39 @@ router.get('/invoice', authenticate, async (req: AuthenticatedRequest, res) => {
 
     const customer = customers.data.find(c => c.metadata.userId === userId);
     if (!customer) {
-      return res.status(404).json({ error: 'Customer not found' });
+      // Create a new customer if not found
+      const newCustomer = await stripe.customers.create({
+        metadata: {
+          userId: userId,
+        },
+      });
+
+      // Update the subscription with the new customer ID
+      await prisma.subscription.update({
+        where: { userId },
+        data: {
+          stripeCustomerId: newCustomer.id,
+        },
+      });
+
+      // Return the database subscription info with proper plan pricing
+      const planName = dbSubscription.plan ? String(dbSubscription.plan) : 'Basic';
+      const billingCycle = 'monthly'; // Default to monthly if unknown
+      const planPrice = getPlanPrice(planName, billingCycle);
+      
+      console.log('Using DB plan info:', { planName, planPrice });
+      
+      return res.json({
+        subscriptionId: dbSubscription.id,
+        plan: planName,
+        planName: planName,
+        amount: planPrice,
+        billingCycle: billingCycle,
+        status: dbSubscription.status,
+        startDate: dbSubscription.currentPeriodStart?.toISOString() || new Date().toISOString(),
+        endDate: dbSubscription.currentPeriodEnd?.toISOString() || new Date().toISOString(),
+        features: getPlanFeatures(planName),
+      });
     }
 
     // Get latest subscription
@@ -137,26 +218,44 @@ router.get('/invoice', authenticate, async (req: AuthenticatedRequest, res) => {
     });
 
     if (!subscriptions.data.length) {
-      // If no active subscription in Stripe, return database subscription info
+      // If no active subscription in Stripe, return database subscription info with proper pricing
+      const planName = dbSubscription.plan ? String(dbSubscription.plan) : 'Basic';
+      const billingCycle = 'monthly'; // Default to monthly if unknown
+      const planPrice = getPlanPrice(planName, billingCycle);
+      
+      console.log('No Stripe subscription, using DB plan:', { planName, planPrice });
+      
       return res.json({
         subscriptionId: dbSubscription.stripeSubscriptionId,
-        plan: dbSubscription.plan || 'Unknown',
-        planName: dbSubscription.plan || 'Unknown',
-        amount: 0,
-        billingCycle: 'monthly',
+        plan: planName,
+        planName: planName,
+        amount: planPrice,
+        billingCycle: billingCycle,
         status: dbSubscription.status,
         startDate: dbSubscription.currentPeriodStart?.toISOString() || null,
         endDate: dbSubscription.currentPeriodEnd?.toISOString() || null,
-        features: [],
+        features: getPlanFeatures(planName),
       });
     }
 
     const subscription = subscriptions.data[0] as StripeSubscription;
     const price = subscription.items.data[0].price as Stripe.Price;
     const product = await stripe.products.retrieve(price.product as string);
+    
+    // Get billing cycle
+    const billingCycle = price.recurring?.interval || 'monthly';
+
+    // Get proper plan name from either Stripe product or DB
+    const planName = dbSubscription.plan ? String(dbSubscription.plan) : product.name;
+
+    console.log('Subscription data:', { 
+      stripePlan: product.name,
+      dbPlan: dbSubscription.plan,
+      planToUse: planName
+    });
 
     // Get plan features based on subscription plan
-    const features = getPlanFeatures(dbSubscription.plan || 'Unknown');
+    const features = getPlanFeatures(planName);
 
     try {
       // Log the raw timestamps for debugging
@@ -165,40 +264,30 @@ router.get('/invoice', authenticate, async (req: AuthenticatedRequest, res) => {
         end: subscription.current_period_end
       });
 
-      // Ensure timestamps are valid numbers
-      if (!subscription.current_period_start || !subscription.current_period_end) {
-        // Update database with current subscription info
-        await prisma.subscription.update({
-          where: { userId },
-          data: {
-            stripeSubscriptionId: subscription.id,
-            status: 'ACTIVE',
-            currentPeriodStart: new Date(),
-            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-          },
-        });
-
-        return res.json({
-          subscriptionId: subscription.id,
-          plan: dbSubscription.plan,
-          planName: product.name,
-          amount: price.unit_amount ? price.unit_amount / 100 : 0,
-          currency: price.currency,
-          billingCycle: price.recurring?.interval || 'monthly',
-          status: 'ACTIVE',
-          startDate: new Date().toISOString(),
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          features,
-        });
+      // Get the actual price from Stripe or fall back to our defined prices
+      let amount = price.unit_amount ? price.unit_amount / 100 : 0;
+      if (amount === 0 || amount < 99) {
+        amount = getPlanPrice(planName, billingCycle);
+        console.log('Using fallback price:', { planName, amount });
+      } else {
+        console.log('Using Stripe price:', { amount });
       }
 
-      // Convert timestamps to milliseconds before creating Date objects
-      const startDate = new Date(subscription.current_period_start * 1000);
-      const endDate = new Date(subscription.current_period_end * 1000);
+      // Ensure timestamps are valid numbers
+      let startDate, endDate;
+      if (!subscription.current_period_start || !subscription.current_period_end) {
+        startDate = new Date();
+        endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+      } else {
+        // Convert timestamps to milliseconds before creating Date objects
+        startDate = new Date(subscription.current_period_start * 1000);
+        endDate = new Date(subscription.current_period_end * 1000);
 
-      // Validate the dates
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        throw new Error('Invalid date conversion');
+        // Validate the dates
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          startDate = new Date();
+          endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        }
       }
 
       // Update database with current subscription info
@@ -214,17 +303,18 @@ router.get('/invoice', authenticate, async (req: AuthenticatedRequest, res) => {
 
       const invoiceData = {
         subscriptionId: subscription.id,
-        plan: dbSubscription.plan,
-        planName: product.name,
-        amount: price.unit_amount ? price.unit_amount / 100 : 0,
+        plan: planName,
+        planName: planName,
+        amount: amount,
         currency: price.currency,
-        billingCycle: price.recurring?.interval || 'monthly',
+        billingCycle: billingCycle,
         status: 'ACTIVE',
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         features,
       };
 
+      console.log('Returning invoice data with amount:', amount);
       return res.json(invoiceData);
     } catch (error) {
       console.error('Error processing subscription dates:', error);
@@ -450,30 +540,35 @@ router.get('/verify-invoice/:subscriptionId', async (req, res) => {
 
 // Helper function to get plan features
 function getPlanFeatures(plan: string): string[] {
-  switch (plan) {
-    case 'BASIC':
-      return [
-        'Basic code review',
-        'Up to 5 reviews per month',
-        'Standard response time',
-      ];
-    case 'ADVANCED':
-      return [
-        'Advanced code review',
-        'Up to 20 reviews per month',
-        'Priority response time',
-        'Detailed analysis',
-      ];
-    case 'ENTERPRISE':
-      return [
-        'Enterprise code review',
-        'Unlimited reviews',
-        '24/7 priority support',
-        'Custom integration options',
-        'Dedicated account manager',
-      ];
-    default:
-      return [];
+  // Normalize the plan name to handle both enum values and string values
+  const planUpper = plan?.toUpperCase() || '';
+  
+  console.log('Getting features for plan:', { original: plan, normalized: planUpper });
+  
+  if (planUpper.includes('BASIC') || planUpper === 'BASIC') {
+    return [
+      'Basic code review',
+      'Up to 5 reviews per month',
+      'Standard response time',
+    ];
+  } else if (planUpper.includes('ADVANCED') || planUpper === 'ADVANCED' || planUpper.includes('PRO')) {
+    return [
+      'Advanced code review',
+      'Up to 20 reviews per month',
+      'Priority response time',
+      'Detailed analysis',
+    ];
+  } else if (planUpper.includes('ENTERPRISE') || planUpper === 'ENTERPRISE') {
+    return [
+      'Enterprise code review',
+      'Unlimited reviews',
+      '24/7 priority support',
+      'Custom integration options',
+      'Dedicated account manager',
+    ];
+  } else {
+    console.log('No plan match found, returning empty features');
+    return [];
   }
 }
 

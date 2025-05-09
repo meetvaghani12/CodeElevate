@@ -110,17 +110,19 @@ export default function InvoicePDFPage() {
               Back to Dashboard
             </Button>
           </Link>
-          <PDFDownloadLink
-            document={<InvoicePDF invoiceData={invoiceData} userData={user} />}
-            fileName={`invoice-${invoiceData.subscriptionId}.pdf`}
-          >
-            {({ loading }) => (
-              <Button disabled={loading}>
-                <Download className="mr-2 h-4 w-4" />
-                {loading ? 'Preparing...' : 'Download Invoice'}
-              </Button>
-            )}
-          </PDFDownloadLink>
+          {user && (
+            <PDFDownloadLink
+              document={<InvoicePDF invoiceData={invoiceData} userData={user} />}
+              fileName={`invoice-${invoiceData.subscriptionId}.pdf`}
+            >
+              {({ loading }) => (
+                <Button disabled={loading}>
+                  <Download className="mr-2 h-4 w-4" />
+                  {loading ? 'Preparing...' : 'Download Invoice'}
+                </Button>
+              )}
+            </PDFDownloadLink>
+          )}
         </div>
 
         <Card className="p-8">

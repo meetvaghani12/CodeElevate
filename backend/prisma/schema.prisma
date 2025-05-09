@@ -90,6 +90,7 @@ model Subscription {
   stripeSubscriptionId String? @unique
   status            SubscriptionStatus @default(INACTIVE)
   plan              SubscriptionPlan?
+  price              Decimal? 
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
   createdAt         DateTime  @default(now())
