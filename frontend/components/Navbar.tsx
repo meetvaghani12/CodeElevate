@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from './ui/button';
+import { useRouter } from 'next/navigation';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const router = useRouter();
 
   return (
     <nav className="bg-white shadow">
@@ -18,9 +20,22 @@ export default function Navbar() {
               </Link>
             </div>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
             {user ? (
               <>
+                {user.subscription?.plan ? (
+                  <span className="text-sm font-medium text-gray-600">
+                    Plan: {user.subscription.plan}
+                  </span>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push('/pricing')}
+                    className="text-sm"
+                  >
+                    Subscribe to Plan
+                  </Button>
+                )}
                 <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
                   Dashboard
                 </Link>

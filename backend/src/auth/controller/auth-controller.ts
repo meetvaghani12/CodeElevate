@@ -137,7 +137,12 @@ export const verifyLoginOTP = async (req: Request, res: Response): Promise<void>
     const { email, otp } = req.body;
 
     // Find user
-    const user = await findUserByEmail(email);
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        subscription: true
+      }
+    });
     if (!user) {
       res.status(400).json({ message: 'User not found' });
       return;
@@ -149,10 +154,6 @@ export const verifyLoginOTP = async (req: Request, res: Response): Promise<void>
       res.status(400).json({ message: 'Invalid or expired OTP' });
       return;
     }
-
-    // // Get user preferences
-    // const userWithPreferences = await getUserWithPreferences(user.id);
-    // const preferredTypes = userWithPreferences?.preferredPropertyTypes.map(p => p.propertyType) || [];
 
     // Generate JWT token
     const token = generateToken({
@@ -179,6 +180,9 @@ export const verifyLoginOTP = async (req: Request, res: Response): Promise<void>
         lastName: user.lastName,
         email: user.email,
         phone: user.phone,
+        subscription: user.subscription ? {
+          plan: user.subscription.plan
+        } : null
       },
     });
   } catch (error) {
@@ -293,7 +297,12 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
     }
 
     // Get user using email from the authenticated request
-    const user = await findUserByEmail(req.user.email);
+    const user = await prisma.user.findUnique({
+      where: { email: req.user.email },
+      include: {
+        subscription: true
+      }
+    });
     console.log('GetProfile: User found', user ? 'Yes' : 'No');
 
     if (!user) {
@@ -311,6 +320,9 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
         email: user.email,
         phone: user.phone,
         emailVerified: user.emailVerified,
+        subscription: user.subscription ? {
+          plan: user.subscription.plan
+        } : null
       },
     };
     console.log('GetProfile: Sending response', response);

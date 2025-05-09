@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Code, FileCode, History, Settings, BarChart } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
 
 interface CodeReview {
   id: string;
@@ -40,6 +41,7 @@ export default function DashboardPage() {
     recentReviews: []
   });
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     fetchDashboardData();
@@ -120,6 +122,29 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight">Welcome back, {user?.firstName || 'User'}!</h1>
           <p className="text-muted-foreground">Here's an overview of your code review activity.</p>
+          {user?.subscription?.plan ? (
+            <div className="mt-4">
+              <Button
+                variant="default"
+                onClick={() => router.push('/invoice')}
+                className="gap-2"
+              >
+                <span >Current Plan:</span>
+                <span>{user.subscription.plan}</span>
+              </Button>
+            </div>
+          ) : (
+            <div className="mt-4">
+              <Button
+                variant="default"
+                onClick={() => router.push('/pricing')}
+                className="gap-2"
+              >
+                Subscribe to Plan
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
