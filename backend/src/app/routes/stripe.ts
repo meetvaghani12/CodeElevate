@@ -133,6 +133,7 @@ router.get('/invoice', authenticate, async (req: AuthenticatedRequest, res) => {
       customer: customer.id,
       limit: 1,
       status: 'active',
+      expand: ['data.items.data.price']
     });
 
     if (!subscriptions.data.length) {
@@ -151,7 +152,7 @@ router.get('/invoice', authenticate, async (req: AuthenticatedRequest, res) => {
     }
 
     const subscription = subscriptions.data[0] as StripeSubscription;
-    const price = await stripe.prices.retrieve(subscription.items.data[0].price.id);
+    const price = subscription.items.data[0].price as Stripe.Price;
     const product = await stripe.products.retrieve(price.product as string);
 
     // Get plan features based on subscription plan
@@ -182,6 +183,7 @@ router.get('/invoice', authenticate, async (req: AuthenticatedRequest, res) => {
           plan: dbSubscription.plan,
           planName: product.name,
           amount: price.unit_amount ? price.unit_amount / 100 : 0,
+          currency: price.currency,
           billingCycle: price.recurring?.interval || 'monthly',
           status: 'ACTIVE',
           startDate: new Date().toISOString(),
@@ -215,6 +217,7 @@ router.get('/invoice', authenticate, async (req: AuthenticatedRequest, res) => {
         plan: dbSubscription.plan,
         planName: product.name,
         amount: price.unit_amount ? price.unit_amount / 100 : 0,
+        currency: price.currency,
         billingCycle: price.recurring?.interval || 'monthly',
         status: 'ACTIVE',
         startDate: startDate.toISOString(),
