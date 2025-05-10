@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useMemo, useEffect } from "react"
-import { ArrowLeft, ArrowRight, Code, FileCode, Upload, X, Folder, ChevronRight, ChevronDown, Sparkles, Maximize2, Minimize2, Download, AlertCircle } from "lucide-react"
+import { ArrowLeft, ArrowRight, Code, FileCode, Upload, X, Folder, ChevronRight, ChevronDown, Sparkles, Maximize2, Minimize2, Download, AlertCircle, Crown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge"
 import ReactMarkdown from "react-markdown" 
 import { ComponentPropsWithoutRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useRouter } from "next/navigation"
 
 // File type definition
 interface CodeFile {
@@ -59,6 +60,7 @@ export default function NewReviewPage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
 
   // Add state for expanded folders
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
@@ -810,6 +812,7 @@ export default function NewReviewPage() {
                     className="hidden"
                     multiple
                     accept=".js,.jsx,.ts,.tsx,.py,.java,.c,.cpp,.html,.css,.json,.md,.txt"
+                    disabled={subscriptionStatus?.remainingReviews === 0}
                   />
                   <input
                     type="file"
@@ -819,23 +822,36 @@ export default function NewReviewPage() {
                     // @ts-ignore - These attributes aren't in the standard HTML attributes
                     webkitdirectory=""
                     directory=""
+                    disabled={subscriptionStatus?.remainingReviews === 0}
                   />
                   <div className="grid grid-cols-2 gap-2 w-full">
-                    <Button 
-                      className="gap-2"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Upload className="h-4 w-4" />
-                      Upload Files
-                    </Button>
-                      <Button
-                      className="gap-2"
-                      variant="outline"
-                      onClick={() => folderInputRef.current?.click()}
+                    {subscriptionStatus?.remainingReviews === 0 ? (
+                      <Button 
+                        className="col-span-2 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                        onClick={() => router.push('/pricing')}
                       >
-                        <FileCode className="h-4 w-4" />
-                      Upload Folder
+                        <Crown className="h-4 w-4" />
+                        Subscribe to Plan
                       </Button>
+                    ) : (
+                      <>
+                        <Button 
+                          className="gap-2"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <Upload className="h-4 w-4" />
+                          Upload Files
+                        </Button>
+                        <Button
+                          className="gap-2"
+                          variant="outline"
+                          onClick={() => folderInputRef.current?.click()}
+                        >
+                          <FileCode className="h-4 w-4" />
+                          Upload Folder
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </CardFooter>
               </Card>
