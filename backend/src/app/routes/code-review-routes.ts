@@ -1,9 +1,8 @@
 import express, { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../../auth/middleware/auth';
+import { CodeReviewService } from '../../services/codeReview.service';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 interface AuthRequest extends Request {
   user?: {
@@ -12,6 +11,21 @@ interface AuthRequest extends Request {
   };
 }
 
+// Get subscription status and remaining reviews
+router.get('/subscription-status', authenticateToken, async (req: AuthRequest, res: Response): Promise<Response> => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    const userId = req.user.id;
+    const status = await CodeReviewService.getSubscriptionStatus(userId);
+    return res.json(status);
+  } catch (error) {
+    console.error('Error fetching subscription status:', error);
+    return res.status(500).json({ message: 'Error fetching subscription status' });
+  }
+});
+
 // Get all code reviews for the authenticated user
 router.get('/', authenticateToken, async (req: AuthRequest, res: Response): Promise<Response> => {
   try {
@@ -19,10 +33,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response): Prom
       return res.status(401).json({ message: 'User not authenticated' });
     }
     const userId = req.user.id;
-    const codeReviews = await prisma.codeReview.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
+    const codeReviews = await CodeReviewService.getUserReviews(userId);
     return res.json(codeReviews);
   } catch (error) {
     console.error('Error fetching code reviews:', error);
@@ -39,9 +50,7 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response): P
     const { id } = req.params;
     const userId = req.user.id;
     
-    const codeReview = await prisma.codeReview.findFirst({
-      where: { id, userId },
-    });
+    const codeReview = await CodeReviewService.getReviewById(id, userId);
 
     if (!codeReview) {
       return res.status(404).json({ message: 'Code review not found' });
@@ -63,51 +72,22 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response): Pro
     const userId = req.user.id;
     const { fileName, code, review, score, issuesCount, language } = req.body;
 
-    const newCodeReview = await prisma.codeReview.create({
-      data: {
-        userId,
-        fileName,
-        code,
-        review,
-        score,
-        issuesCount,
-        language,
-        status: 'COMPLETED',
-      },
-    });
+    const newCodeReview = await CodeReviewService.createReview({
+      fileName,
+      code,
+      review,
+      score,
+      issuesCount,
+      language
+    }, userId);
 
     return res.status(201).json(newCodeReview);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating code review:', error);
-    return res.status(500).json({ message: 'Error creating code review' });
-  }
-});
-
-// Update a code review
-router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response): Promise<Response> => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'User not authenticated' });
+    if (error.message.includes('code review limit')) {
+      return res.status(403).json({ message: error.message });
     }
-    const { id } = req.params;
-    const { fileName, code, review, score, issuesCount, status } = req.body;
-
-    const updatedCodeReview = await prisma.codeReview.update({
-      where: { id },
-      data: {
-        fileName,
-        code,
-        review,
-        score,
-        issuesCount,
-        status,
-      },
-    });
-
-    return res.json(updatedCodeReview);
-  } catch (error) {
-    console.error('Error updating code review:', error);
-    return res.status(500).json({ message: 'Error updating code review' });
+    return res.status(500).json({ message: 'Error creating code review' });
   }
 });
 
@@ -118,10 +98,9 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response)
       return res.status(401).json({ message: 'User not authenticated' });
     }
     const { id } = req.params;
+    const userId = req.user.id;
 
-    await prisma.codeReview.delete({
-      where: { id },
-    });
+    await CodeReviewService.deleteReview(id, userId);
 
     return res.status(204).send();
   } catch (error) {

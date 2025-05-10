@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { ArrowUpDown, FileCode, Search, ArrowLeft, Download, ChevronDown } from "lucide-react"
+import { ArrowUpDown, FileCode, Search, ArrowLeft, Download, ChevronDown, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -21,6 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface CodeReview {
   id: string
@@ -34,6 +35,13 @@ interface CodeReview {
   updatedAt: string
 }
 
+interface SubscriptionStatus {
+  plan: string;
+  currentReviews: number;
+  reviewLimit: number;
+  remainingReviews: number;
+}
+
 export default function ReviewHistory() {
   const { toast } = useToast()
   const [reviews, setReviews] = useState<CodeReview[]>([])
@@ -44,9 +52,11 @@ export default function ReviewHistory() {
   const [scoreFilter, setScoreFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("newest")
   const [selectedReview, setSelectedReview] = useState<CodeReview | null>(null)
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null)
 
   useEffect(() => {
     fetchReviews()
+    fetchSubscriptionStatus()
   }, [])
 
   useEffect(() => {
@@ -109,6 +119,37 @@ export default function ReviewHistory() {
       });
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  const fetchSubscriptionStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found for subscription status');
+        return;
+      }
+
+      const response = await fetch('/api/code-reviews/subscription-status', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch subscription status');
+      }
+
+      const data = await response.json();
+      setSubscriptionStatus(data);
+    } catch (error) {
+      console.error('Error fetching subscription status:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load subscription status",
+        variant: "destructive"
+      });
     }
   }
 
@@ -421,38 +462,48 @@ export default function ReviewHistory() {
 
   return (
     <ProtectedRoute>
-      <div className="flex flex-col gap-6 p-4 md:gap-8 md:p-8">
-        <div className="flex items-center gap-4 mb-4">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
+      <div className="container mx-auto py-8">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Review History</h1>
+            <p className="text-gray-500">View and manage your code reviews</p>
+          </div>
+          <Link href="/">
+            <Button variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Home
             </Button>
           </Link>
-          <div className="flex items-center gap-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-6 w-6"
-            >
-              <path d="m18 16 4-4-4-4" />
-              <path d="m6 8-4 4 4 4" />
-              <path d="m14.5 4-5 16" />
-            </svg>
-            <span className="font-bold">AnveshaCode</span>
-          </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Review History</h1>
-          <p className="text-muted-foreground">View and manage your past code reviews.</p>
-        </div>
+        {subscriptionStatus && (
+          <Alert className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Subscription Status</AlertTitle>
+            <AlertDescription className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Current Plan:</span>
+                <Badge variant="outline" className="capitalize">
+                  {subscriptionStatus.plan.toLowerCase()}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Reviews Used:</span>
+                <span>
+                  {subscriptionStatus.currentReviews} / {subscriptionStatus.reviewLimit === Infinity ? '∞' : subscriptionStatus.reviewLimit}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Remaining Reviews:</span>
+                <span>
+                  {subscriptionStatus.remainingReviews === Infinity ? '∞' : subscriptionStatus.remainingReviews}
+                </span>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
-        <Card>
+        <Card className="mb-6">
           <CardHeader>
             <CardTitle>Filters</CardTitle>
             <CardDescription>Filter your review history by various criteria.</CardDescription>
@@ -524,8 +575,7 @@ export default function ReviewHistory() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[100px]">ID</TableHead>
-                    <TableHead>Name</TableHead>
+                    <TableHead>File Name</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead className="text-center">Issues</TableHead>
                     <TableHead>Score</TableHead>
@@ -536,8 +586,7 @@ export default function ReviewHistory() {
                 <TableBody>
                   {filteredReviews.map((review) => (
                     <TableRow key={review.id}>
-                      <TableCell className="font-medium">{review.id}</TableCell>
-                      <TableCell>{review.fileName || 'Pasted Code'}</TableCell>
+                      <TableCell className="font-medium">{review.fileName || 'Pasted Code'}</TableCell>
                       <TableCell>{formatDate(review.createdAt)}</TableCell>
                       <TableCell className="text-center">{review.issuesCount}</TableCell>
                       <TableCell>
