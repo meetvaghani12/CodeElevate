@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { ArrowUpDown, FileCode, Search, ArrowLeft, Download, ChevronDown, AlertCircle } from "lucide-react"
+import { ArrowUpDown, FileCode, Search, ArrowLeft, Download, ChevronDown, AlertCircle, BarChart, Code, History, Crown, CheckCircle2, Timer, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -477,39 +477,48 @@ export default function ReviewHistory() {
         </div>
 
         {subscriptionStatus && (
-          <Alert className="mb-6 border-2 bg-gradient-to-r from-background via-primary/5 to-muted/50 dark:from-background dark:via-primary/10 dark:to-muted/30 shadow-lg">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 dark:from-primary/10 dark:to-primary/10 rounded-lg" />
-            <div className="relative">
-              <AlertCircle className="h-5 w-5 text-primary" />
-              <AlertTitle className="text-lg font-semibold">Subscription Status</AlertTitle>
-              <AlertDescription className="flex flex-col gap-2 mt-2">
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 dark:bg-primary/10 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors backdrop-blur-sm">
-                  <span className="font-medium text-foreground/90">Current Plan:</span>
-                  <Badge variant="secondary" className="capitalize px-3 py-1 text-sm font-medium bg-primary/10 hover:bg-primary/20">
-                    {subscriptionStatus.plan.toLowerCase()}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 dark:bg-primary/10 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors backdrop-blur-sm">
-                  <span className="font-medium text-foreground/90">Reviews Used:</span>
-                  <div className="flex items-center gap-1">
-                    <span className="font-semibold text-primary">
-                      {subscriptionStatus.currentReviews}
-                    </span>
-                    <span className="text-muted-foreground">/</span>
-                    <span className="font-medium">
-                      {subscriptionStatus.reviewLimit === Infinity ? '∞' : subscriptionStatus.reviewLimit}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 dark:bg-primary/10 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors backdrop-blur-sm">
-                  <span className="font-medium text-foreground/90">Remaining Reviews:</span>
-                  <span className="font-semibold text-primary">
-                    {subscriptionStatus.remainingReviews === Infinity ? '∞' : subscriptionStatus.remainingReviews}
-                  </span>
-                </div>
-              </AlertDescription>
-            </div>
-          </Alert>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Current Plan</CardTitle>
+                <Crown className="h-4 w-4 text-yellow-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold capitalize">{subscriptionStatus.plan.toLowerCase()}</div>
+                <p className="text-xs text-muted-foreground">Active subscription</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Reviews Used</CardTitle>
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{subscriptionStatus.currentReviews}</div>
+                <p className="text-xs text-muted-foreground">Total reviews completed</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Review Limit</CardTitle>
+                <Timer className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{subscriptionStatus.reviewLimit === Infinity ? '∞' : subscriptionStatus.reviewLimit}</div>
+                <p className="text-xs text-muted-foreground">Plan limit</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Remaining Reviews</CardTitle>
+                <Zap className="h-4 w-4 text-orange-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{subscriptionStatus.remainingReviews === Infinity ? '∞' : subscriptionStatus.remainingReviews}</div>
+                <p className="text-xs text-muted-foreground">Available reviews</p>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         <Card className="mb-6 bg-gradient-to-br from-background to-muted/50 dark:from-background dark:to-muted/30">
@@ -568,8 +577,8 @@ export default function ReviewHistory() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Review History</CardTitle>
-            <CardDescription>A list of all your past code reviews.</CardDescription>
+            {/* <CardTitle>Review History</CardTitle>
+            <CardDescription>A list of all your past code reviews.</CardDescription> */}
           </CardHeader>
           <CardContent>
             {isLoading ? (

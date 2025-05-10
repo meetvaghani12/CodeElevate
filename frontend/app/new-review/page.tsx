@@ -758,21 +758,15 @@ export default function NewReviewPage() {
         </div>
 
         {subscriptionStatus && (
-          <Alert className="mb-6 border-2 bg-gradient-to-r from-background via-primary/5 to-muted/50 dark:from-background dark:via-primary/10 dark:to-muted/30 shadow-lg">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 dark:from-primary/10 dark:to-primary/10 rounded-lg" />
-            <div className="relative">
-              <AlertCircle className="h-5 w-5 text-primary" />
-              <AlertTitle className="text-lg font-semibold">Subscription Status</AlertTitle>
-              <AlertDescription className="flex flex-col gap-2 mt-2">
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 dark:bg-primary/10 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors backdrop-blur-sm">
-                  <span className="font-medium text-foreground/90">Remaining Reviews:</span>
-                  <span className="font-semibold text-primary">
-                    {subscriptionStatus.remainingReviews === Infinity ? '∞' : subscriptionStatus.remainingReviews}
-                  </span>
-                </div>
-              </AlertDescription>
+          <div className="mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 dark:bg-primary/20 rounded-md border border-primary/20">
+              <AlertCircle className="h-4 w-4 text-primary" />
+              <span className="font-medium">Remaining Reviews:</span>
+              <span className="font-bold text-primary">
+                {subscriptionStatus.remainingReviews === Infinity ? '∞' : subscriptionStatus.remainingReviews}
+              </span>
             </div>
-          </Alert>
+          </div>
         )}
 
         <Tabs defaultValue="upload" className="space-y-4">
