@@ -463,47 +463,56 @@ export default function ReviewHistory() {
   return (
     <ProtectedRoute>
       <div className="container mx-auto py-8">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex items-center gap-4 mb-8">
+          <Link href="/">
+            <Button variant="ghost" size="icon" className="h-10 w-10">
+              <ArrowLeft className="h-5 w-5" />
+              <span className="sr-only">Back to Home</span>
+            </Button>
+          </Link>
           <div>
             <h1 className="text-3xl font-bold">Review History</h1>
             <p className="text-gray-500">View and manage your code reviews</p>
           </div>
-          <Link href="/">
-            <Button variant="outline">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Button>
-          </Link>
         </div>
 
         {subscriptionStatus && (
-          <Alert className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Subscription Status</AlertTitle>
-            <AlertDescription className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">Current Plan:</span>
-                <Badge variant="outline" className="capitalize">
-                  {subscriptionStatus.plan.toLowerCase()}
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-medium">Reviews Used:</span>
-                <span>
-                  {subscriptionStatus.currentReviews} / {subscriptionStatus.reviewLimit === Infinity ? '∞' : subscriptionStatus.reviewLimit}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-medium">Remaining Reviews:</span>
-                <span>
-                  {subscriptionStatus.remainingReviews === Infinity ? '∞' : subscriptionStatus.remainingReviews}
-                </span>
-              </div>
-            </AlertDescription>
+          <Alert className="mb-6 border-2 bg-gradient-to-r from-background via-primary/5 to-muted/50 dark:from-background dark:via-primary/10 dark:to-muted/30 shadow-lg">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 dark:from-primary/10 dark:to-primary/10 rounded-lg" />
+            <div className="relative">
+              <AlertCircle className="h-5 w-5 text-primary" />
+              <AlertTitle className="text-lg font-semibold">Subscription Status</AlertTitle>
+              <AlertDescription className="flex flex-col gap-2 mt-2">
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 dark:bg-primary/10 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors backdrop-blur-sm">
+                  <span className="font-medium text-foreground/90">Current Plan:</span>
+                  <Badge variant="secondary" className="capitalize px-3 py-1 text-sm font-medium bg-primary/10 hover:bg-primary/20">
+                    {subscriptionStatus.plan.toLowerCase()}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 dark:bg-primary/10 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors backdrop-blur-sm">
+                  <span className="font-medium text-foreground/90">Reviews Used:</span>
+                  <div className="flex items-center gap-1">
+                    <span className="font-semibold text-primary">
+                      {subscriptionStatus.currentReviews}
+                    </span>
+                    <span className="text-muted-foreground">/</span>
+                    <span className="font-medium">
+                      {subscriptionStatus.reviewLimit === Infinity ? '∞' : subscriptionStatus.reviewLimit}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 dark:bg-primary/10 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors backdrop-blur-sm">
+                  <span className="font-medium text-foreground/90">Remaining Reviews:</span>
+                  <span className="font-semibold text-primary">
+                    {subscriptionStatus.remainingReviews === Infinity ? '∞' : subscriptionStatus.remainingReviews}
+                  </span>
+                </div>
+              </AlertDescription>
+            </div>
           </Alert>
         )}
 
-        <Card className="mb-6">
+        <Card className="mb-6 bg-gradient-to-br from-background to-muted/50 dark:from-background dark:to-muted/30">
           <CardHeader>
             <CardTitle>Filters</CardTitle>
             <CardDescription>Filter your review history by various criteria.</CardDescription>

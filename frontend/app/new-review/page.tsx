@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useRef, useMemo } from "react"
-import { ArrowLeft, ArrowRight, Code, FileCode, Upload, X, Folder, ChevronRight, ChevronDown, Sparkles, Maximize2, Minimize2, Download } from "lucide-react"
+import { useState, useRef, useMemo, useEffect } from "react"
+import { ArrowLeft, ArrowRight, Code, FileCode, Upload, X, Folder, ChevronRight, ChevronDown, Sparkles, Maximize2, Minimize2, Download, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -13,6 +13,8 @@ import { useToast } from "@/components/ui/use-toast"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 // @ts-ignore - ReactMarkdown doesn't have TypeScript declarations
 import ReactMarkdown from "react-markdown" 
 import { ComponentPropsWithoutRef } from "react"
@@ -36,6 +38,13 @@ interface FolderStructure {
 // Review model type
 type ReviewModel = "llm" | "agent"
 
+interface SubscriptionStatus {
+  plan: string;
+  currentReviews: number;
+  reviewLimit: number;
+  remainingReviews: number;
+}
+
 export default function NewReviewPage() {
   const { toast } = useToast()
   const [files, setFiles] = useState<CodeFile[]>([])
@@ -47,11 +56,48 @@ export default function NewReviewPage() {
   const [pastedCode, setPastedCode] = useState("")
   const [reviewModel, setReviewModel] = useState<ReviewModel>("llm")
   const [isFullScreen, setIsFullScreen] = useState(false)
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
 
   // Add state for expanded folders
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
+
+  // Add useEffect to fetch subscription status
+  useEffect(() => {
+    fetchSubscriptionStatus()
+  }, [])
+
+  const fetchSubscriptionStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found for subscription status');
+        return;
+      }
+
+      const response = await fetch('/api/code-reviews/subscription-status', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch subscription status');
+      }
+
+      const data = await response.json();
+      setSubscriptionStatus(data);
+    } catch (error) {
+      console.error('Error fetching subscription status:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load subscription status",
+        variant: "destructive"
+      });
+    }
+  }
 
   // Handle review model change
   const handleReviewModelChange = (value: string) => {
@@ -697,17 +743,39 @@ export default function NewReviewPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex flex-col gap-6 p-4 md:gap-8 md:p-8">
-        <div className="flex items-center gap-2">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
+      <div className="container mx-auto py-8">
+        <div className="flex items-center gap-4 mb-8">
+          <Link href="/">
+            <Button variant="ghost" size="icon" className="h-10 w-10">
+              <ArrowLeft className="h-5 w-5" />
+              <span className="sr-only">Back to Home</span>
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight">New Code Review</h1>
+          <div>
+            <h1 className="text-3xl font-bold">New Code Review</h1>
+            <p className="text-gray-500">Upload or paste your code for review</p>
+          </div>
         </div>
 
-        <Tabs defaultValue="upload" className="w-full">
+        {subscriptionStatus && (
+          <Alert className="mb-6 border-2 bg-gradient-to-r from-background via-primary/5 to-muted/50 dark:from-background dark:via-primary/10 dark:to-muted/30 shadow-lg">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 dark:from-primary/10 dark:to-primary/10 rounded-lg" />
+            <div className="relative">
+              <AlertCircle className="h-5 w-5 text-primary" />
+              <AlertTitle className="text-lg font-semibold">Subscription Status</AlertTitle>
+              <AlertDescription className="flex flex-col gap-2 mt-2">
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 dark:bg-primary/10 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors backdrop-blur-sm">
+                  <span className="font-medium text-foreground/90">Remaining Reviews:</span>
+                  <span className="font-semibold text-primary">
+                    {subscriptionStatus.remainingReviews === Infinity ? '∞' : subscriptionStatus.remainingReviews}
+                  </span>
+                </div>
+              </AlertDescription>
+            </div>
+          </Alert>
+        )}
+
+        <Tabs defaultValue="upload" className="space-y-4">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="upload" className="flex items-center gap-2">
               <Upload className="h-4 w-4" />
