@@ -761,10 +761,10 @@ export default function NewReviewPage() {
 
         {subscriptionStatus && (
           <div className="mb-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 dark:bg-primary/20 rounded-md border border-primary/20">
-              <AlertCircle className="h-4 w-4 text-primary" />
-              <span className="font-medium">Remaining Reviews:</span>
-              <span className="font-bold text-primary">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-md border border-yellow-200 dark:border-yellow-800">
+              <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+              <span className="font-medium text-yellow-800 dark:text-yellow-300">Remaining Reviews:</span>
+              <span className="font-bold text-yellow-600 dark:text-yellow-400">
                 {subscriptionStatus.remainingReviews === Infinity ? '∞' : subscriptionStatus.remainingReviews}
               </span>
             </div>
