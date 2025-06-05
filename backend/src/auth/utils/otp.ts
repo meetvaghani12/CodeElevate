@@ -1,10 +1,8 @@
-import { Redis } from 'ioredis';
 import { getExpiryTime, isExpired } from './date-time';
 import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
+import redisClient from '../../utils/redis';
 
-// Initialize Redis client
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 const prisma = new PrismaClient();
 
 // OTP expiry time in minutes
@@ -41,19 +39,19 @@ export const storeOTP = async (email: string, otp: string): Promise<void> => {
   const expiryTime = getExpiryTime(OTP_EXPIRY_MINUTES);
   
   // Store OTP and expiry time
-  await redis.set(key, JSON.stringify({
+  await redisClient.set(key, JSON.stringify({
     otp,
     expiryTime: expiryTime.toISOString(),
   }));
   
   // Set Redis key expiry
-  await redis.expire(key, OTP_EXPIRY_MINUTES * 60);
+  await redisClient.expire(key, OTP_EXPIRY_MINUTES * 60);
 };
 
 // Verify OTP
 export const verifyOTP = async (email: string, providedOTP: string): Promise<boolean> => {
   const key = `otp:${email}`;
-  const storedData = await redis.get(key);
+  const storedData = await redisClient.get<string>(key);
   
   if (!storedData) {
     return false;
@@ -63,7 +61,7 @@ export const verifyOTP = async (email: string, providedOTP: string): Promise<boo
   
   // Check if OTP is expired
   if (isExpired(new Date(expiryTime))) {
-    await redis.del(key);
+    await redisClient.del(key);
     return false;
   }
   
@@ -73,12 +71,12 @@ export const verifyOTP = async (email: string, providedOTP: string): Promise<boo
   }
   
   // Delete OTP after successful verification
-  await redis.del(key);
+  await redisClient.del(key);
   return true;
 };
 
 // Clear OTP
 export const clearOTP = async (email: string): Promise<void> => {
   const key = `otp:${email}`;
-  await redis.del(key);
-}; 
+  await redisClient.del(key);
+};
