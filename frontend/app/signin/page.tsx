@@ -64,7 +64,7 @@ export default function LoginPage() {
         })
       } else if (response.token) {
         console.log('Signin Page: Login successful, calling auth context login')
-        login(response.token)
+        await login(response.token)
         toast({
           title: "Login Successful",
           description: "Welcome back!",
@@ -103,7 +103,7 @@ export default function LoginPage() {
       
       if (response.token) {
         console.log('Signin Page: OTP verification successful, calling auth context login')
-        login(response.token)
+        await login(response.token)
         toast({
           title: "Login Successful",
           description: "Welcome back!",

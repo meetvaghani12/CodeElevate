@@ -85,11 +85,10 @@ export default function RegisterPage() {
       if (response.message === "Email verified successfully") {
         toast({
           title: "Email Verified",
-          description: "Your account has been created. Please log in.",
+          description: "Your account has been created successfully. Please sign in.",
         })
-        router.push('/')
+        router.push('/signin')
       } else {
-        // Verification failed
         toast({
           title: "Verification Failed",
           description: response.message || "Invalid verification code",

@@ -30,10 +30,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
-  const login = (token: string) => {
+  const login = async (token: string) => {
     console.log('Auth Context: Login called with token', token ? 'Token exists' : 'No token')
     localStorage.setItem('token', token)
-    checkAuth()
+    await checkAuth() // Wait for checkAuth to complete
   }
 
   const logout = async () => {
@@ -49,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     console.log('Auth Context: Clearing local storage and user state')
     localStorage.removeItem('token')
+    localStorage.removeItem('user')
     setUser(null)
     router.push('/')
   }
@@ -76,11 +77,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         console.log('Auth Context: No user in response, clearing token and user state')
         localStorage.removeItem('token')
+        localStorage.removeItem('user')
         setUser(null)
       }
     } catch (error) {
       console.error('Auth Context: Error fetching user profile:', error)
       localStorage.removeItem('token')
+      localStorage.removeItem('user')
       setUser(null)
     } finally {
       setIsLoading(false)
