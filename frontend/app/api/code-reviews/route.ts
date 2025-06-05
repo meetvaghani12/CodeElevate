@@ -11,22 +11,22 @@ export async function GET(request: Request) {
       );
     }
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/code-reviews/subscription-status`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/code-reviews`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch subscription status');
+      throw new Error('Failed to fetch code reviews');
     }
 
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error in subscription status route:', error);
+    console.error('Error in code reviews route:', error);
     return NextResponse.json(
-      { message: 'Failed to fetch subscription status' },
+      { message: 'Failed to fetch code reviews' },
       { status: 500 }
     );
   }

@@ -1,8 +1,10 @@
 import express, { Request, Response } from 'express';
 import { authenticateToken } from '../../auth/middleware/auth';
 import { CodeReviewService } from '../../services/codeReview.service';
+import { PrismaClient } from '@prisma/client';
 
 const router = express.Router();
+const prisma = new PrismaClient();
 
 interface AuthRequest extends Request {
   user?: {
@@ -10,6 +12,24 @@ interface AuthRequest extends Request {
     email: string;
   };
 }
+
+// Get all code reviews for a user
+router.get('/', authenticateToken, async (req: AuthRequest, res: Response): Promise<Response> => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    const userId = req.user.id;
+    const reviews = await prisma.codeReview.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' }
+    });
+    return res.json(reviews);
+  } catch (error) {
+    console.error('Error fetching code reviews:', error);
+    return res.status(500).json({ message: 'Error fetching code reviews' });
+  }
+});
 
 // Get subscription status and remaining reviews
 router.get('/subscription-status', authenticateToken, async (req: AuthRequest, res: Response): Promise<Response> => {
@@ -23,21 +43,6 @@ router.get('/subscription-status', authenticateToken, async (req: AuthRequest, r
   } catch (error) {
     console.error('Error fetching subscription status:', error);
     return res.status(500).json({ message: 'Error fetching subscription status' });
-  }
-});
-
-// Get all code reviews for the authenticated user
-router.get('/', authenticateToken, async (req: AuthRequest, res: Response): Promise<Response> => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-    const userId = req.user.id;
-    const codeReviews = await CodeReviewService.getUserReviews(userId);
-    return res.json(codeReviews);
-  } catch (error) {
-    console.error('Error fetching code reviews:', error);
-    return res.status(500).json({ message: 'Error fetching code reviews' });
   }
 });
 
