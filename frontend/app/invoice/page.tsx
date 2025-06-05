@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { Loader2 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { ArrowLeft, Download, CheckCircle } from "lucide-react"
 import Link from "next/link"
@@ -12,29 +13,32 @@ import { PDFDownloadLink } from '@react-pdf/renderer'
 import { InvoicePDF } from "./InvoicePDF"
 
 interface InvoiceData {
-  subscriptionId: string;
-  planName: string;
-  amount: number;
-  billingCycle: string;
-  status: string;
-  startDate: string;
-  endDate: string;
-  features: string[];
+  id: string
+  amount: number
+  status: string
+  date: string
+  items: Array<{
+    description: string
+    quantity: number
+    price: number
+  }>
 }
 
-interface PDFDownloadLinkProps {
-  loading: boolean;
-}
-
-export default function InvoicePage() {
+function InvoiceContent() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
-  const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [invoice, setInvoice] = useState<InvoiceData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchInvoiceData = async () => {
+    const fetchInvoice = async () => {
+      const invoiceId = searchParams.get('id');
+      if (!invoiceId) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -42,7 +46,7 @@ export default function InvoicePage() {
           return;
         }
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stripe/invoice`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stripe/invoice/${invoiceId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -54,30 +58,28 @@ export default function InvoicePage() {
         }
 
         const data = await response.json();
-        if (!data.subscriptionId || !data.planName) {
+        if (!data.id || !data.amount || !data.status || !data.date || !data.items) {
           throw new Error('Invalid invoice data received');
         }
-        setInvoiceData(data);
+        setInvoice(data);
       } catch (error) {
         console.error('Error fetching invoice:', error);
         setError(error instanceof Error ? error.message : 'Failed to load invoice');
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
-    if (searchParams.get('success')) {
-      fetchInvoiceData();
-    }
+    fetchInvoice();
   }, [searchParams]);
 
   const handleDownloadInvoice = () => {
-    if (!invoiceData || !user) return;
+    if (!invoice || !user) return;
     
     return (
       <PDFDownloadLink
-        document={<InvoicePDF invoiceData={invoiceData} userData={user} />}
-        fileName={`invoice-${invoiceData.subscriptionId}.pdf`}
+        document={<InvoicePDF invoiceData={invoice} userData={user} />}
+        fileName={`invoice-${invoice.id}.pdf`}
       >
         {({ loading }: PDFDownloadLinkProps) => (
           <Button disabled={loading}>
@@ -89,138 +91,131 @@ export default function InvoicePage() {
     );
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+          <p className="mt-4">Loading invoice...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <h1 className="text-2xl font-bold mb-4 text-red-600">Error Loading Invoice</h1>
-        <p className="text-muted-foreground mb-4">{error}</p>
-        <Link href="/dashboard">
-          <Button>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Button>
-        </Link>
+      <div className="flex min-h-screen items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Error Loading Invoice</CardTitle>
+            <CardDescription>
+              {error}
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="flex justify-end space-x-4">
+            <Button variant="outline" onClick={() => window.print()}>
+              Print Invoice
+            </Button>
+            <Link href="/dashboard">
+              <Button>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </Link>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
 
-  if (!invoiceData) {
+  if (!invoice) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <h1 className="text-2xl font-bold mb-4">No Invoice Found</h1>
-        <Link href="/dashboard">
-          <Button>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Button>
-        </Link>
+      <div className="flex min-h-screen items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Invoice Not Found</CardTitle>
+            <CardDescription>
+              The requested invoice could not be found.
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="container max-w-4xl">
-        <div className="flex justify-between items-center mb-8">
-          <Link href="/dashboard">
-            <Button variant="ghost">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
-            </Button>
-          </Link>
-          {handleDownloadInvoice()}
-        </div>
-
-        <Card className="p-8">
-          <div className="flex justify-between items-start mb-8">
+    <div className="container mx-auto py-8">
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardHeader>
+          <CardTitle>Invoice #{invoice.id}</CardTitle>
+          <CardDescription>
+            Date: {new Date(invoice.date).toLocaleDateString()}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Invoice</h1>
-              <p className="text-muted-foreground">
-                Thank you for your subscription!
-              </p>
+              <h3 className="font-semibold mb-2">Items</h3>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2">Description</th>
+                    <th className="text-right py-2">Quantity</th>
+                    <th className="text-right py-2">Price</th>
+                    <th className="text-right py-2">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoice.items.map((item, index) => (
+                    <tr key={index} className="border-b">
+                      <td className="py-2">{item.description}</td>
+                      <td className="text-right py-2">{item.quantity}</td>
+                      <td className="text-right py-2">${item.price.toFixed(2)}</td>
+                      <td className="text-right py-2">
+                        ${(item.quantity * item.price).toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div className="text-right">
-              <p className="font-medium">Invoice Date</p>
-              <p className="text-muted-foreground">
-                {new Date(invoiceData.startDate).toLocaleDateString()}
-              </p>
+            <div className="flex justify-between items-center pt-4">
+              <span className="font-semibold">Total Amount:</span>
+              <span className="font-semibold">${invoice.amount.toFixed(2)}</span>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-8 mb-8">
-            <div>
-              <h2 className="font-semibold mb-2">Bill To</h2>
-              <p>{user?.firstName} {user?.lastName}</p>
-              <p>{user?.email}</p>
-            </div>
-            <div className="text-right">
-              <h2 className="font-semibold mb-2">Subscription Details</h2>
-              <p>Plan: {invoiceData.planName}</p>
-              <p>Billing Cycle: {invoiceData.billingCycle}</p>
-              <p>Status: <span className="text-green-600">{invoiceData.status}</span></p>
-            </div>
-          </div>
-
-          <div className="border-t border-b py-4 mb-8">
             <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-semibold">{invoiceData.planName} Plan</h3>
-                <p className="text-muted-foreground">
-                  {invoiceData.billingCycle} subscription
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold">₹{invoiceData.amount}</p>
-                <p className="text-muted-foreground">
-                  per {invoiceData.billingCycle === 'monthly' ? 'month' : 'year'}
-                </p>
-              </div>
+              <span className="font-semibold">Status:</span>
+              <span className={`capitalize ${
+                invoice.status === 'paid' ? 'text-green-600' : 
+                invoice.status === 'pending' ? 'text-yellow-600' : 'text-red-600'
+              }`}>
+                {invoice.status}
+              </span>
             </div>
           </div>
-
-          <div className="mb-8">
-            <h3 className="font-semibold mb-4">Included Features</h3>
-            <ul className="grid grid-cols-2 gap-4">
-              {invoiceData.features.map((feature, index) => (
-                <li key={index} className="flex items-center">
-                  <CheckCircle className="h-4 w-4 text-primary mr-2" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Subscription Period
-              </p>
-              <p>
-                {new Date(invoiceData.startDate).toLocaleDateString()} - {new Date(invoiceData.endDate).toLocaleDateString()}
-              </p>
-            </div>
-            <div className="text-center">
-              <QRCodeSVG
-                value={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/invoice/${invoiceData.subscriptionId}`}
-                size={128}
-                level="H"
-                includeMargin={true}
-              />
-              <p className="text-sm text-muted-foreground mt-2">
-                Scan to verify
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
+        </CardContent>
+        <CardFooter className="flex justify-end space-x-4">
+          <Button variant="outline" onClick={() => window.print()}>
+            Print Invoice
+          </Button>
+          {handleDownloadInvoice()}
+        </CardFooter>
+      </Card>
     </div>
+  );
+}
+
+export default function InvoicePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+          <p className="mt-4">Loading...</p>
+        </div>
+      </div>
+    }>
+      <InvoiceContent />
+    </Suspense>
   );
 } 

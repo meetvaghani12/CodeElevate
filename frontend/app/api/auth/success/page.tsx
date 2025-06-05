@@ -1,12 +1,12 @@
 // src/app/auth/success/page.tsx
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 
-export default function AuthSuccessPage() {
+function AuthSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [message, setMessage] = useState("Completing authentication...")
@@ -45,7 +45,6 @@ export default function AuthSuccessPage() {
     if (user) {
       try {
         const userData = JSON.parse(user)
-        // You might want to dispatch this to your auth context
         localStorage.setItem('user', user)
       } catch (e) {
         console.error('Failed to parse user data:', e)
@@ -58,16 +57,30 @@ export default function AuthSuccessPage() {
       description: "You have been logged in successfully",
     })
     
-    // Redirect to the protected area
     setTimeout(() => router.push('/'), 1000)
   }, [searchParams, router])
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center">
-      <div className="flex flex-col items-center space-y-4">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-lg font-medium">{message}</p>
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+        <p className="mt-4">{message}</p>
       </div>
     </div>
+  )
+}
+
+export default function AuthSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+          <p className="mt-4">Loading...</p>
+        </div>
+      </div>
+    }>
+      <AuthSuccessContent />
+    </Suspense>
   )
 }
