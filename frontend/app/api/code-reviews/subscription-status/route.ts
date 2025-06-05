@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     }
 
     // Use relative URL since we're in the same domain
-    const response = await fetch('http://localhost:5000/api/code-reviews/subscription-status', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/code-reviews/subscription-status`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
